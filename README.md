@@ -52,7 +52,9 @@ Table `todos`
 * id (PK)
 * label
 * text
-* priority
+* lft
+* rgt
+* created_at
 * status
 * user_id (FK - users.id)
 
