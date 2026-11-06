@@ -2,3 +2,4 @@ node_modules
 .pytest_cache
 .venv
 __pycache__
+.state
