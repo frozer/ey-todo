@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, Uuid, ForeignKey
+from sqlalchemy import String, DateTime, Uuid, Integer, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -14,7 +14,7 @@ class UserRow(Base):
     default=uuid.uuid4
   )
   username: Mapped[str] = mapped_column(String(50), primary_key=True)
-  hashed_password: Mapped[str] = mapped_column(String(255))
+  password_hash: Mapped[str] = mapped_column(String(255))
 
 class TodoRow(Base):
   __tablename__ = "todos"
@@ -34,3 +34,17 @@ class TodoRow(Base):
     ForeignKey("users.id", ondelete="CASCADE"), 
     nullable=False
   )
+
+class SessionRow(Base):
+  __tablename__ = "sessions"
+  id: Mapped[Integer] = mapped_column(Integer, primary_key=True )
+  session_hash: Mapped[str] = mapped_column(String(255))
+  expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+  last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+  revoked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+  user_id: Mapped[uuid.UUID] = mapped_column(
+    Uuid(native_uuid=False), 
+    ForeignKey("users.id", ondelete="CASCADE"), 
+    nullable=False
+  )
+  user: Mapped["UserRow"] = relationship("UserRow", back_populates="sessions")
