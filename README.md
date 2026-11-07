@@ -84,7 +84,7 @@ Relationships
 |API|Method|Payload|Note|
 |-|-|-|-|
 |/auth/register |POST|{username, password}|Register a new user|
-|/auth          |POST|{username, password}|Creates per-session cookie|
+|/auth/login    |POST|{username, password}|Creates per-session cookie|
 |/auth/me       |GET||Returns the actual user|
 |/auth/{user}   |PATCH|{password}|change password|
 |/auth/logout   |POST||logout the user|
