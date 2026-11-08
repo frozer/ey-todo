@@ -6,6 +6,7 @@ from fastapi import Depends
 from .database.engine import SessionFactory
 from .users.service import UserStore
 from .auth.service import UserSessionStore
+from .core.config import Settings, get_settings
 
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with SessionFactory() as session:
@@ -26,3 +27,5 @@ def get_user_session_store() -> UserStore:
     return _user_session_store
 
 UserSessionStoreDep = Annotated[UserSessionStore, Depends(get_user_session_store)]
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]

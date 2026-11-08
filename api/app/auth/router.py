@@ -2,8 +2,13 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from .schemas import MeResponse, RegisterBody
 from .security import hash_password, password_policy_error, verify_password, generate_session_token, hash_session_token, dummy_hash
-from ..deps import SessionDep, UserStoreDep, UserSessionStoreDep
+from ..deps import SessionDep, UserStoreDep, UserSessionStoreDep, SettingsDep
 from ..database.models import UserRow
+from typing import Annotated
+from .session import SESSION_COOKIE_KEY, UserContext, require_user_session
+from ..core.clock import get_clock
+from collections.abc import Callable
+from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -53,7 +58,10 @@ async def login(
   response: Response, 
   session: SessionDep, 
   user_store: UserStoreDep,
-  session_store: UserSessionStoreDep):
+  session_store: UserSessionStoreDep,
+  settings: SettingsDep,
+  clock: Annotated[Callable[[], datetime], Depends(get_clock)],
+):
   username = body.username.strip().lower()
 
   user = await user_store.get(session, username)
@@ -74,13 +82,22 @@ async def login(
     return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail={"description": "invalid_credentials"})
 
   response.set_cookie(
-    key="__Host-session",
+    key=SESSION_COOKIE_KEY,
+    value=token,
     httponly=True,
+    secure=True if settings.environment == "DEV" else False,
     samesite="lax",
     path="/"
   )
 
   return MeResponse(username=username)
 
-
-
+@router.get("/me", response_model=MeResponse)
+async def me(
+  ctx: Annotated[
+        UserContext, Depends(require_user_session)
+    ],
+):
+  return MeResponse(
+        username=ctx.username
+    )

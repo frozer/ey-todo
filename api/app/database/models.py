@@ -1,7 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import String, DateTime, Uuid, ForeignKey, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import DateTime
+from sqlalchemy.types import TypeDecorator
 
 # Define a standard naming convention
 naming_convention = {
@@ -12,6 +14,28 @@ naming_convention = {
     "pk": "pk_%(table_name)s"
 }
 
+class UTCDateTime(TypeDecorator):
+  impl = DateTime
+  cache_ok = True
+
+  def process_bind_param(self, value: datetime | None, _dialect):
+    if value is None:
+      return None
+
+    if value.tzinfo is None:
+      raise ValueError("Naive datetime is not allowed")
+    
+    return value.astimezone(timezone.utc)
+
+  def process_result_value(self, value: datetime | None, dialect):
+    if value is None:
+      return None
+
+    if value.tzinfo is None:
+      return value.replace(tzinfo=timezone.utc)
+
+    return value.astimezone(timezone.utc)
+        
 class Base(DeclarativeBase):
    metadata = MetaData(naming_convention=naming_convention)
 
@@ -38,7 +62,7 @@ class TodoRow(Base):
   lft: Mapped[int]
   rgt: Mapped[int]
   status: Mapped[str] = mapped_column(String(50))
-  created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+  created_at: Mapped[datetime] = mapped_column(UTCDateTime())
   user_id: Mapped[uuid.UUID] = mapped_column(
     Uuid(native_uuid=False), 
     ForeignKey("users.id", ondelete="CASCADE"),
@@ -49,9 +73,9 @@ class TodoRow(Base):
 class SessionRow(Base):
   __tablename__ = "sessions"
   session_hash: Mapped[str] = mapped_column(String(255), primary_key=True)
-  expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-  last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-  revoked_at: Mapped[datetime|None] = mapped_column(DateTime(timezone=True))
+  expires_at: Mapped[datetime] = mapped_column(UTCDateTime(),)
+  last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(),)
+  revoked_at: Mapped[datetime|None] = mapped_column(UTCDateTime(),)
   user_id: Mapped[uuid.UUID] = mapped_column(
     Uuid(native_uuid=False), 
     ForeignKey("users.id", ondelete="CASCADE"), 
