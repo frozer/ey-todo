@@ -3,12 +3,12 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from ..auth.session import UserContext, require_user_session
 from ..core.clock import get_clock
 from ..deps import SessionDep, TodoStoreDep
-from .schemas import Todo, TodoCreate, TodosResponse
+from .schemas import Todo, TodoCreate, TodosResponse, TodoUpdate
 
 router = APIRouter(prefix="/todos", tags=["todo"])
 
@@ -42,16 +42,7 @@ async def create(
   ],
   clock: Annotated[Callable[[], datetime], Depends(get_clock)],
 ):
-  label = body.label.strip()
-  text = body.text.strip()
-
-  if (len(label) < 1):
-    raise HTTPException(
-      status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, 
-      detail={"description": "label_too_short"}
-    )
-
-  return await store.create(session, label, text, ctx.user_id, clock())
+  return await store.create(session, body, ctx.user_id, clock())
 
 @router.delete("/{item_id}", response_model=None)
 async def delete(
@@ -60,18 +51,21 @@ async def delete(
   store: TodoStoreDep,
   ctx: Annotated[
     UserContext, Depends(require_user_session)
-  ]
+  ],
+  clock: Annotated[Callable[[], datetime], Depends(get_clock)],
 ):
-  return await store.delete(session, item_id, ctx.user_id)
+  return await store.delete(session, item_id, ctx.user_id, clock())
 
 @router.patch("/{item_id}", response_model=None)
 async def update(
-  body: Todo,
+  item_id: uuid.UUID,
+  body: TodoUpdate,
   session: SessionDep,
   store: TodoStoreDep,
   ctx: Annotated[
     UserContext, Depends(require_user_session)
-  ]
+  ],
+  clock: Annotated[Callable[[], datetime], Depends(get_clock)],
 ):
-  return await store.update(session, body, ctx.user_id)
+ return await store.update(session, body, item_id, ctx.user_id, clock())
 

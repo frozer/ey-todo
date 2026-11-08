@@ -59,15 +59,24 @@ class TodoRow(Base):
   )
   label: Mapped[str] = mapped_column(String(50))
   text: Mapped[str] = mapped_column(String(200))
-  lft: Mapped[int] = mapped_column(default=0)
-  rgt: Mapped[int] = mapped_column(default=0)
+  position: Mapped[int] = mapped_column(default=0)
   status: Mapped[str] = mapped_column(String(50), default="")
   created_at: Mapped[datetime] = mapped_column(UTCDateTime())
+  modified_at: Mapped[datetime | None] = mapped_column(
+    UTCDateTime(),
+    nullable=True,
+    default=None
+  )
   user_id: Mapped[uuid.UUID] = mapped_column(
     Uuid(native_uuid=False), 
     ForeignKey("users.id", ondelete="CASCADE"),
     index=True,
     nullable=False
+  )
+  removed_at: Mapped[datetime | None] = mapped_column(
+    UTCDateTime(),
+    nullable=True,
+    default=None
   )
   is_removed: Mapped[bool] = mapped_column(default=False)
 
