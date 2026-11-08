@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, StringConstraints
 StrippedStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 class TodoCreate(BaseModel):
-  label: StrippedStr = Field(examples="Build todo app")
+  label: StrippedStr = Field(examples=["Build todo app"])
   text: str | None = Field(strip_whitespace=True, default=None)
   status: str | None = Field(strip_whitespace=True, default=None)
 
