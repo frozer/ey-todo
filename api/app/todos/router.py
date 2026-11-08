@@ -1,13 +1,14 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Annotated
-from datetime import datetime
 from collections.abc import Callable
+from datetime import datetime
+from typing import Annotated
 
-from ..core.clock import get_clock
+from fastapi import APIRouter, Depends, HTTPException, status
+
 from ..auth.session import UserContext, require_user_session
-from .schemas import TodosResponse, Todo, TodoCreate
+from ..core.clock import get_clock
 from ..deps import SessionDep, TodoStoreDep
+from .schemas import Todo, TodoCreate, TodosResponse
 
 router = APIRouter(prefix="/todos", tags=["todo"])
 

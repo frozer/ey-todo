@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from sqlalchemy import select, delete, or_
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..database.models import TodoRow
 
+from ..database.models import TodoRow
 from .schemas import Todo
+
 
 class TodoStore:
   async def getAll(

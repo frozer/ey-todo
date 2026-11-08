@@ -3,8 +3,8 @@ import logging
 from fastapi import FastAPI
 
 from .auth.router import router as auth_router
-from .todos.router import router as todo_router
 from .core.config import get_settings
+from .todos.router import router as todo_router
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
