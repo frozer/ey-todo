@@ -1,14 +1,23 @@
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from .schemas import MeResponse, RegisterBody
-from .security import hash_password, password_policy_error, verify_password, generate_session_token, hash_session_token, dummy_hash
-from ..deps import SessionDep, UserStoreDep, UserSessionStoreDep, SettingsDep
-from ..database.models import UserRow
-from typing import Annotated
-from .session import SESSION_COOKIE_KEY, UserContext, require_user_session
-from ..core.clock import get_clock
 from collections.abc import Callable
 from datetime import datetime
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+
+from ..core.clock import get_clock
+from ..database.models import UserRow
+from ..deps import SessionDep, SettingsDep, UserSessionStoreDep, UserStoreDep
+from .schemas import MeResponse, RegisterBody
+from .security import (
+  dummy_hash,
+  generate_session_token,
+  hash_password,
+  hash_session_token,
+  password_policy_error,
+  verify_password,
+)
+from .session import SESSION_COOKIE_KEY, UserContext, require_user_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -77,7 +86,7 @@ async def login(
 
   if reason is None:
     await session_store.clear(session, user_id)
-    await session_store.create(session, user_id, token_hash)
+    await session_store.create(session, user_id, token_hash, clock())
   else:
     return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail={"description": "invalid_credentials"})
 
@@ -85,7 +94,7 @@ async def login(
     key=SESSION_COOKIE_KEY,
     value=token,
     httponly=True,
-    secure=True if settings.environment == "DEV" else False,
+    secure=True,
     samesite="lax",
     path="/"
   )

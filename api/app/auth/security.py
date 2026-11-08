@@ -1,9 +1,10 @@
 
+import hashlib
+import secrets
+from functools import lru_cache
+
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from functools import lru_cache
-import secrets
-import hashlib
 
 MIN_PASSWORD_BYTES = 8
 MAX_PASSWORD_BYTES = 72

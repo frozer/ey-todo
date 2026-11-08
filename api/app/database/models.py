@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import String, DateTime, Uuid, ForeignKey, MetaData
+from datetime import UTC, datetime
+
+from sqlalchemy import DateTime, ForeignKey, MetaData, String, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import DateTime
 from sqlalchemy.types import TypeDecorator
 
 # Define a standard naming convention
@@ -25,16 +25,16 @@ class UTCDateTime(TypeDecorator):
     if value.tzinfo is None:
       raise ValueError("Naive datetime is not allowed")
     
-    return value.astimezone(timezone.utc)
+    return value.astimezone(UTC)
 
   def process_result_value(self, value: datetime | None, dialect):
     if value is None:
       return None
 
     if value.tzinfo is None:
-      return value.replace(tzinfo=timezone.utc)
+      return value.replace(tzinfo=UTC)
 
-    return value.astimezone(timezone.utc)
+    return value.astimezone(UTC)
         
 class Base(DeclarativeBase):
    metadata = MetaData(naming_convention=naming_convention)

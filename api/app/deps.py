@@ -1,12 +1,14 @@
 from collections.abc import AsyncIterator
 from typing import Annotated
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
 
-from .database.engine import SessionFactory
-from .users.service import UserStore
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from .auth.service import UserSessionStore
 from .core.config import Settings, get_settings
+from .database.engine import SessionFactory
+from .users.service import UserStore
+
 
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with SessionFactory() as session:

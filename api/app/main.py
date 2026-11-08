@@ -1,7 +1,9 @@
-from fastapi import FastAPI
 import logging
+
+from fastapi import FastAPI
+
+from .auth.router import router as auth_router
 from .core.config import get_settings
-from .auth.router import router as auth_router 
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
