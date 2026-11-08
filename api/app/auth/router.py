@@ -101,3 +101,13 @@ async def me(
   return MeResponse(
         username=ctx.username
     )
+
+@router.post("/logout", response_model=None)
+async def logout(
+  session: SessionDep, 
+  session_store: UserSessionStoreDep,
+  ctx: Annotated[
+        UserContext, Depends(require_user_session)
+    ],
+):
+  await session_store.clear(session, ctx.user_id)

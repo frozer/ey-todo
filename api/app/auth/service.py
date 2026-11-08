@@ -57,3 +57,4 @@ class UserSessionStore:
   ) -> None:
     stmt = delete(SessionRow).where(SessionRow.user_id == user_id)
     await session.execute(stmt, execution_options={"synchronize_session": "fetch"})
+    await session.commit()
