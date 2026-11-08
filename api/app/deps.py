@@ -8,7 +8,7 @@ from .auth.service import UserSessionStore
 from .core.config import Settings, get_settings
 from .database.engine import SessionFactory
 from .users.service import UserStore
-
+from .todos.service import TodoStore
 
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with SessionFactory() as session:
@@ -29,5 +29,12 @@ def get_user_session_store() -> UserStore:
     return _user_session_store
 
 UserSessionStoreDep = Annotated[UserSessionStore, Depends(get_user_session_store)]
+
+_todo_store = TodoStore()
+
+def get_todo_store() -> TodoStore:
+    return _todo_store
+
+TodoStoreDep = Annotated[TodoStore, Depends(get_todo_store)]
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]

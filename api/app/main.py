@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI
 
 from .auth.router import router as auth_router
+from .todos.router import router as todo_router
 from .core.config import get_settings
 
 settings = get_settings()
@@ -26,3 +27,4 @@ def create_app() -> FastAPI:
 app = create_app()
 
 app.include_router(auth_router, prefix="/api")
+app.include_router(todo_router, prefix="/api")

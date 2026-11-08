@@ -59,9 +59,9 @@ class TodoRow(Base):
   )
   label: Mapped[str] = mapped_column(String(50))
   text: Mapped[str] = mapped_column(String(200))
-  lft: Mapped[int]
-  rgt: Mapped[int]
-  status: Mapped[str] = mapped_column(String(50))
+  lft: Mapped[int] = mapped_column(default=0)
+  rgt: Mapped[int] = mapped_column(default=0)
+  status: Mapped[str] = mapped_column(String(50), default="")
   created_at: Mapped[datetime] = mapped_column(UTCDateTime())
   user_id: Mapped[uuid.UUID] = mapped_column(
     Uuid(native_uuid=False), 
@@ -69,6 +69,7 @@ class TodoRow(Base):
     index=True,
     nullable=False
   )
+  is_removed: Mapped[bool] = mapped_column(default=False)
 
 class SessionRow(Base):
   __tablename__ = "sessions"
