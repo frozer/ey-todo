@@ -40,11 +40,6 @@ def password_policy_error(
   `current` is given only when the person changes their own password, so a
   reuse check applies.
   """
-  size = len(new.encode("utf-8"))
-  if size > MAX_PASSWORD_BYTES:
-    return "password_too_long"
-  if size < MIN_PASSWORD_BYTES:
-    return "password_too_short"
   if current is not None and new == current:
     return "password_reused"
   if new.lower() == username.lower():

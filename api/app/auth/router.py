@@ -3,7 +3,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from ..core.clock import get_clock
 from ..database.models import UserRow
@@ -11,13 +11,15 @@ from ..deps import SessionDep, SettingsDep, UserSessionStoreDep, UserStoreDep
 from .schemas import MeResponse, RegisterBody
 from .security import (
   dummy_hash,
-  generate_session_token,
   hash_password,
-  hash_session_token,
   password_policy_error,
   verify_password,
 )
-from .session import SESSION_COOKIE_KEY, UserContext, require_user_session
+from .session import (
+  UserContext,
+  require_user_session,
+  set_session_cookie,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -31,20 +33,23 @@ def _failure_reason(user: UserRow | None, password_ok: bool) -> str | None:
     return "bad_password"
   return None
 
-@router.post("/register", response_model=MeResponse)
+@router.post("/register",
+  response_model=MeResponse,
+  responses={
+    status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "data validation failure"},
+    status.HTTP_409_CONFLICT: {"description": "Given username already exists, pick another one"}
+  }
+)
 async def register(
   body: RegisterBody,
-  request: Request,
+  response: Response,
   session: SessionDep,
-  user_store: UserStoreDep):
-  username = body.username.strip().lower()
+  user_store: UserStoreDep,
+  user_session_store: UserSessionStoreDep,
+  settings: SettingsDep,
+  clock: Annotated[Callable[[], datetime], Depends(get_clock)],
+):
 
-  if (len(username) < 1):
-    raise HTTPException(
-      status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, 
-      detail={"description": "username_too_short"}
-    )
-  
   violation = password_policy_error(
     body.password, body.username, ""
   )
@@ -52,56 +57,72 @@ async def register(
   if violation is not None:
     raise HTTPException(
       status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-      detail={"description": violation}
+      detail=[{"msg": violation}]
     )
   
   password_hash = await asyncio.to_thread(hash_password, body.password)
 
-  await user_store.create(session, username, password_hash)
+  try:
+    user = await user_store.create(session, body.username, password_hash)
 
-  return MeResponse(username=username)
+    await set_session_cookie(
+      response,
+      clock(),
+      session,
+      user_session_store,
+      user.id,
+      settings.environment == "DEV"
+    )
+    
+    return MeResponse(username=body.username)
+  
+  except ValueError:
+    raise HTTPException(
+      status_code=status.HTTP_409_CONFLICT,
+      detail=[{"msg": "Given username already exists, pick another one"}]
+    )
 
-@router.post("/login", response_model=MeResponse)
+@router.post("/login",
+  response_model=MeResponse,
+  responses={
+    status.HTTP_401_UNAUTHORIZED: {"description": "invalid_credentials"}
+  }
+)
 async def login(
   body: RegisterBody,
   response: Response, 
   session: SessionDep, 
   user_store: UserStoreDep,
-  session_store: UserSessionStoreDep,
+  user_session_store: UserSessionStoreDep,
   settings: SettingsDep,
   clock: Annotated[Callable[[], datetime], Depends(get_clock)],
 ):
-  username = body.username.strip().lower()
-
-  user = await user_store.get(session, username)
-  user_id = user.id if user is not None else None
+  user = await user_store.get(session, body.username)
   stored = user.password_hash if user is not None else None
   
   password_ok = await asyncio.to_thread(_check_password, body.password, stored)
 
-  token = generate_session_token()
-  token_hash = hash_session_token(token)
-
   reason = _failure_reason(user, password_ok)
 
   if reason is None:
-    await session_store.clear(session, user_id)
-    await session_store.create(session, user_id, token_hash, clock())
+    await set_session_cookie(
+      response,
+      clock(),
+      session,
+      user_session_store,
+      user.id,
+      settings.environment == "DEV"
+    )
   else:
-    return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail={"description": "invalid_credentials"})
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=[{"msg": "invalid_credentials"}])
 
-  response.set_cookie(
-    key=SESSION_COOKIE_KEY,
-    value=token,
-    httponly=True,
-    secure=True,
-    samesite="lax",
-    path="/"
-  )
+  return MeResponse(username=body.username)
 
-  return MeResponse(username=username)
-
-@router.get("/me", response_model=MeResponse)
+@router.get("/me", 
+            response_model=MeResponse,
+            responses={
+              status.HTTP_401_UNAUTHORIZED: {"description": "not_authenticated"}
+            })
 async def me(
   ctx: Annotated[
         UserContext, Depends(require_user_session)
@@ -111,7 +132,12 @@ async def me(
         username=ctx.username
     )
 
-@router.post("/logout", response_model=None)
+@router.post("/logout",
+  response_model=None,
+  responses={
+    status.HTTP_401_UNAUTHORIZED: {"description": "not_authenticated"}
+  }
+)
 async def logout(
   session: SessionDep, 
   session_store: UserSessionStoreDep,

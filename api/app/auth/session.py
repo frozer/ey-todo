@@ -3,16 +3,17 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.clock import get_clock, is_past
 from ..core.config import Settings
 from ..database.models import SessionRow
 from ..deps import SessionDep, SettingsDep, UserSessionStore, UserSessionStoreDep
-from .security import hash_session_token
+from .security import generate_session_token, hash_session_token
 
 SESSION_COOKIE_KEY = "__Host-session"
+DEV_SESSION_COOKIE_KEY = "session"
 
 @dataclass(frozen=True)
 class UserContext:
@@ -20,11 +21,14 @@ class UserContext:
   username: str
   session_hash: str
 
-def _not_authenticated() -> HTTPException:
-  return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail={"description": "not_authenticated"})
+def get_cookie_key(is_dev: bool = False):
+  return SESSION_COOKIE_KEY if is_dev == False else DEV_SESSION_COOKIE_KEY
 
-def _session_token(request: Request) -> str:
-  return request.cookies.get(SESSION_COOKIE_KEY)
+def _not_authenticated() -> HTTPException:
+  return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=[{"msg": "not_authenticated"}])
+
+def _session_token(request: Request, is_dev: bool = False) -> str:
+  return request.cookies.get(get_cookie_key(is_dev))
 
 def _session_is_expired(user_session: SessionRow, now: datetime, session_idle: int) -> bool:
   idle_deadline = user_session.last_seen_at + timedelta(days=session_idle)
@@ -40,7 +44,7 @@ async def _authenticate(
   user_session_store: UserSessionStore,
   settings: Settings
 ) -> UserContext:
-  token = _session_token(request)
+  token = _session_token(request, settings.environment == "DEV")
   if token is None:
     raise _not_authenticated()
 
@@ -67,6 +71,29 @@ async def _authenticate(
     raise _not_authenticated()
     
   return context
+
+async def set_session_cookie(
+    response: Response,
+    now: datetime,
+    session: AsyncSession,
+    user_session_store: UserSessionStore,
+    user_id: str,
+    is_dev: bool = False
+  ):
+    token = generate_session_token()
+    token_hash = hash_session_token(token)
+
+    await user_session_store.clear(session, user_id)
+    await user_session_store.create(session, user_id, token_hash, now)
+    
+    response.set_cookie(
+      key=get_cookie_key(is_dev),
+      value=token,
+      httponly=True,
+      secure=is_dev != True,
+      samesite="lax",
+      path="/"
+    )
 
 async def require_user_session(
     request: Request,
