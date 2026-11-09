@@ -30,3 +30,5 @@ class Todo(BaseModel):
 class TodosResponse(BaseModel):
   items: list[Todo]
 
+class FilterParams(BaseModel):
+  q: str | None = Field(strip_whitespace=True,to_lower=True,default=None)

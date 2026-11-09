@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateApiTodosPostData, CreateApiTodosPostErrors, CreateApiTodosPostResponses, DeleteApiTodosItemIdDeleteData, DeleteApiTodosItemIdDeleteErrors, DeleteApiTodosItemIdDeleteResponses, HealthHealthGetData, HealthHealthGetResponses, ListApiTodosGetData, ListApiTodosGetErrors, ListApiTodosGetResponses, LoginApiAuthLoginPostData, LoginApiAuthLoginPostErrors, LoginApiAuthLoginPostResponses, LogoutApiAuthLogoutPostData, LogoutApiAuthLogoutPostErrors, LogoutApiAuthLogoutPostResponses, MeApiAuthMeGetData, MeApiAuthMeGetErrors, MeApiAuthMeGetResponses, RegisterApiAuthRegisterPostData, RegisterApiAuthRegisterPostErrors, RegisterApiAuthRegisterPostResponses, UpdateApiTodosItemIdPatchData, UpdateApiTodosItemIdPatchErrors, UpdateApiTodosItemIdPatchResponses } from './types.gen';
+import type { CreateApiTodosPostData, CreateApiTodosPostErrors, CreateApiTodosPostResponses, DeleteApiTodosItemIdDeleteData, DeleteApiTodosItemIdDeleteErrors, DeleteApiTodosItemIdDeleteResponses, GetApiTodosItemIdGetData, GetApiTodosItemIdGetErrors, GetApiTodosItemIdGetResponses, HealthHealthGetData, HealthHealthGetResponses, ListApiTodosGetData, ListApiTodosGetErrors, ListApiTodosGetResponses, LoginApiAuthLoginPostData, LoginApiAuthLoginPostErrors, LoginApiAuthLoginPostResponses, LogoutApiAuthLogoutPostData, LogoutApiAuthLogoutPostErrors, LogoutApiAuthLogoutPostResponses, MeApiAuthMeGetData, MeApiAuthMeGetErrors, MeApiAuthMeGetResponses, RegisterApiAuthRegisterPostData, RegisterApiAuthRegisterPostErrors, RegisterApiAuthRegisterPostResponses, UpdateApiTodosItemIdPatchData, UpdateApiTodosItemIdPatchErrors, UpdateApiTodosItemIdPatchResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -78,6 +78,11 @@ export const createApiTodosPost = <ThrowOnError extends boolean = false>(options
  * Delete
  */
 export const deleteApiTodosItemIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteApiTodosItemIdDeleteData, ThrowOnError>): RequestResult<DeleteApiTodosItemIdDeleteResponses, DeleteApiTodosItemIdDeleteErrors, ThrowOnError> => (options.client ?? client).delete<DeleteApiTodosItemIdDeleteResponses, DeleteApiTodosItemIdDeleteErrors, ThrowOnError>({ url: '/api/todos/{item_id}', ...options });
+
+/**
+ * Get
+ */
+export const getApiTodosItemIdGet = <ThrowOnError extends boolean = false>(options: Options<GetApiTodosItemIdGetData, ThrowOnError>): RequestResult<GetApiTodosItemIdGetResponses, GetApiTodosItemIdGetErrors, ThrowOnError> => (options.client ?? client).get<GetApiTodosItemIdGetResponses, GetApiTodosItemIdGetErrors, ThrowOnError>({ url: '/api/todos/{item_id}', ...options });
 
 /**
  * Update

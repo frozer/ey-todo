@@ -3,17 +3,18 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from ..auth.session import UserContext, require_user_session
 from ..core.clock import get_clock
 from ..deps import SessionDep, TodoStoreDep
-from .schemas import Todo, TodoCreate, TodosResponse, TodoUpdate
+from .schemas import FilterParams, Todo, TodoCreate, TodosResponse, TodoUpdate
 
 router = APIRouter(prefix="/todos", tags=["todo"])
 
 @router.get("", response_model=TodosResponse)
 async def list(
+  filter_query: Annotated[FilterParams, Query()],
   session: SessionDep,
   store: TodoStoreDep,
   ctx: Annotated[
@@ -23,8 +24,8 @@ async def list(
 ):
   filter: dict[str,str] = {}
   
-  if q is not None:
-    filter["q"] = q
+  if filter_query.q:
+    filter["q"] = filter_query.q
 
   items = await store.getAll(session, ctx.user_id, filter)
 
@@ -69,3 +70,13 @@ async def update(
 ):
  return await store.update(session, body, item_id, ctx.user_id, clock())
 
+@router.get("/{item_id}", response_model=Todo)
+async def get(
+  item_id: uuid.UUID,
+  session: SessionDep,
+  store: TodoStoreDep,
+  ctx: Annotated[
+    UserContext, Depends(require_user_session)
+  ]
+):
+ return await store.get(session, item_id, ctx.user_id)

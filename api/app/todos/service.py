@@ -24,7 +24,7 @@ class TodoStore:
     if filter is not None:
       for key, value in filter.items():
         if key == "q":        
-          conditions.append(TodoRow.label.ilike(value))
+          conditions.append(TodoRow.label.ilike(f"%{value}%"))
     
     stmt = select(TodoRow).where(*conditions).order_by(
       TodoRow.position,
@@ -136,3 +136,31 @@ class TodoStore:
       modified_at=row.modified_at,
       status=row.status
     )
+
+  async def get(
+        self,
+        session: AsyncSession,
+        id: str,
+        user_id: str
+    ) -> Todo:
+      conditions = [
+        TodoRow.id == id, 
+        TodoRow.user_id == user_id,
+        TodoRow.is_removed == False
+      ]
+      
+      stmt = select(TodoRow).where(*conditions)
+  
+      result = await session.execute(stmt)
+  
+      row = result.scalar_one()
+  
+      return Todo(
+        id=row.id,
+        label=row.label,
+        text=row.text,
+        position=row.position,
+        created_at=row.created_at,
+        modified_at=row.modified_at,
+        status=row.status
+      )

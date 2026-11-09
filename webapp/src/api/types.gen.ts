@@ -357,6 +357,36 @@ export type DeleteApiTodosItemIdDeleteResponses = {
     200: unknown;
 };
 
+export type GetApiTodosItemIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Item Id
+         */
+        item_id: string;
+    };
+    query?: never;
+    url: '/api/todos/{item_id}';
+};
+
+export type GetApiTodosItemIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetApiTodosItemIdGetError = GetApiTodosItemIdGetErrors[keyof GetApiTodosItemIdGetErrors];
+
+export type GetApiTodosItemIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: Todo;
+};
+
+export type GetApiTodosItemIdGetResponse = GetApiTodosItemIdGetResponses[keyof GetApiTodosItemIdGetResponses];
+
 export type UpdateApiTodosItemIdPatchData = {
     body: TodoUpdate;
     path: {

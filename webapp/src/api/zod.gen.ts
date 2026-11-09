@@ -121,6 +121,15 @@ export const zDeleteApiTodosItemIdDeletePath = z.object({
     item_id: z.uuid()
 });
 
+export const zGetApiTodosItemIdGetPath = z.object({
+    item_id: z.uuid()
+});
+
+/**
+ * Successful Response
+ */
+export const zGetApiTodosItemIdGetResponse = zTodo;
+
 export const zUpdateApiTodosItemIdPatchBody = zTodoUpdate;
 
 export const zUpdateApiTodosItemIdPatchPath = z.object({

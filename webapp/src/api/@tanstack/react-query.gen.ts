@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { createApiTodosPost, deleteApiTodosItemIdDelete, healthHealthGet, listApiTodosGet, loginApiAuthLoginPost, logoutApiAuthLogoutPost, meApiAuthMeGet, type Options, registerApiAuthRegisterPost, updateApiTodosItemIdPatch } from '../sdk.gen';
-import type { CreateApiTodosPostData, CreateApiTodosPostError, CreateApiTodosPostResponse, DeleteApiTodosItemIdDeleteData, DeleteApiTodosItemIdDeleteError, HealthHealthGetData, HealthHealthGetResponse, ListApiTodosGetData, ListApiTodosGetError, ListApiTodosGetResponse, LoginApiAuthLoginPostData, LoginApiAuthLoginPostError, LoginApiAuthLoginPostResponse, LogoutApiAuthLogoutPostData, MeApiAuthMeGetData, MeApiAuthMeGetResponse, RegisterApiAuthRegisterPostData, RegisterApiAuthRegisterPostResponse, UpdateApiTodosItemIdPatchData, UpdateApiTodosItemIdPatchError } from '../types.gen';
+import { createApiTodosPost, deleteApiTodosItemIdDelete, getApiTodosItemIdGet, healthHealthGet, listApiTodosGet, loginApiAuthLoginPost, logoutApiAuthLogoutPost, meApiAuthMeGet, type Options, registerApiAuthRegisterPost, updateApiTodosItemIdPatch } from '../sdk.gen';
+import type { CreateApiTodosPostData, CreateApiTodosPostError, CreateApiTodosPostResponse, DeleteApiTodosItemIdDeleteData, DeleteApiTodosItemIdDeleteError, GetApiTodosItemIdGetData, GetApiTodosItemIdGetError, GetApiTodosItemIdGetResponse, HealthHealthGetData, HealthHealthGetResponse, ListApiTodosGetData, ListApiTodosGetError, ListApiTodosGetResponse, LoginApiAuthLoginPostData, LoginApiAuthLoginPostError, LoginApiAuthLoginPostResponse, LogoutApiAuthLogoutPostData, MeApiAuthMeGetData, MeApiAuthMeGetResponse, RegisterApiAuthRegisterPostData, RegisterApiAuthRegisterPostResponse, UpdateApiTodosItemIdPatchData, UpdateApiTodosItemIdPatchError } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -177,6 +177,24 @@ export const deleteApiTodosItemIdDeleteMutation = (options?: Partial<Options<Del
     };
     return mutationOptions;
 };
+
+export const getApiTodosItemIdGetQueryKey = (options: Options<GetApiTodosItemIdGetData>) => createQueryKey('getApiTodosItemIdGet', options);
+
+/**
+ * Get
+ */
+export const getApiTodosItemIdGetOptions = (options: Options<GetApiTodosItemIdGetData>) => queryOptions<GetApiTodosItemIdGetResponse, GetApiTodosItemIdGetError, GetApiTodosItemIdGetResponse, ReturnType<typeof getApiTodosItemIdGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getApiTodosItemIdGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getApiTodosItemIdGetQueryKey(options)
+});
 
 /**
  * Update
