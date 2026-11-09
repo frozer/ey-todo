@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { loginApiAuthLoginPost, registerApiAuthRegisterPost, type RegisterBody, type HttpValidationError  } from "../api"
+import { loginApiAuthLoginPost, registerApiAuthRegisterPost, type RegisterBody } from "../api"
 import { LoginForm } from "./LoginForm";
 import { useState } from "react";
 import { isHttpValidationError } from "../core/error.guard";
