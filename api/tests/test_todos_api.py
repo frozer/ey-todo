@@ -165,3 +165,23 @@ async def test_reorder_with_stale_neighbours_is_409(auth_client):
   assert resp.status_code == 409
   assert resp.json() == {"detail": [{"msg": "stale_order"}]}
   assert await _labels(auth_client) == ["a", "b", "c"]
+
+
+async def test_label_max_length_on_create(auth_client):
+  assert (await auth_client.post("/api/todos", json={"label": "x" * 50})).status_code == 200
+  # surrounding whitespace is stripped before the length check
+  assert (await auth_client.post("/api/todos", json={"label": f"  {'x' * 50}  "})).status_code == 200
+
+  resp = await auth_client.post("/api/todos", json={"label": "x" * 51})
+  assert resp.status_code == 422
+  assert resp.json()["detail"][0]["loc"] == ["body", "label"]
+
+
+async def test_label_max_length_on_update(auth_client):
+  todo = await _create(auth_client, "short")
+
+  resp = await auth_client.patch(f"/api/todos/{todo['id']}", json={"label": "x" * 51})
+  assert resp.status_code == 422
+
+  resp = await auth_client.get(f"/api/todos/{todo['id']}")
+  assert resp.json()["label"] == "short"

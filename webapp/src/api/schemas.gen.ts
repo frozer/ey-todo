@@ -177,6 +177,7 @@ export const TodoCreateSchema = {
     properties: {
         label: {
             type: 'string',
+            maxLength: 50,
             minLength: 1,
             title: 'Label',
             examples: [
@@ -220,6 +221,7 @@ export const TodoUpdateSchema = {
             anyOf: [
                 {
                     type: 'string',
+                    maxLength: 50,
                     minLength: 1
                 },
                 {

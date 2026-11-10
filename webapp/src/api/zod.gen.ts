@@ -52,7 +52,7 @@ export const zTodo = z.object({
  * TodoCreate
  */
 export const zTodoCreate = z.object({
-    label: z.string().min(1),
+    label: z.string().min(1).max(50),
     text: z.string().max(200).nullish(),
     status: z.string().nullish()
 });
@@ -61,7 +61,7 @@ export const zTodoCreate = z.object({
  * TodoUpdate
  */
 export const zTodoUpdate = z.object({
-    label: z.string().min(1).nullish(),
+    label: z.string().min(1).max(50).nullish(),
     text: z.string().max(200).nullish(),
     status: z.string().min(1).nullish(),
     lft: z.uuid().nullish(),
