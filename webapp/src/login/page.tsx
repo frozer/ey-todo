@@ -32,7 +32,9 @@ export function LoginPage(options: {
     <main>
       <h1>{mode === 'LOGIN' ? 'Log in' : 'Register' }</h1>
       <LoginForm action={loginAction} />
-      <button onClick={() => setMode(mode => mode === 'LOGIN' ? 'REGISTER' : 'LOGIN')}>{mode === 'LOGIN' ? 'No account? Sign up!' : 'Already have one? Log in!' }</button>
+      <button onClick={() => setMode(mode => mode === 'LOGIN' ? 'REGISTER' : 'LOGIN')}>
+        {mode === 'LOGIN' ? 'No account? Sign up!' : 'Already have one? Log in!' }
+      </button>
     </main>
   )
 }

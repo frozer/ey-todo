@@ -1,17 +1,22 @@
 import { createBrowserRouter, redirect } from "react-router-dom";
 import RootLayout from "./RootLayout";
-import { hasAuth } from "./core/hasAuth";
+import { getCurrentUser } from "./core/user.helper";
 import { LoginPage } from "./login/page";
 import { TodosPage } from "./todos/todos.page";
 import { TodoPage } from "./todos/todo.page";
 
 export const router = createBrowserRouter([
   {
+    id: 'root',
     path: '/',
     element: <RootLayout />,
     loader: async () => {
-      const x = await hasAuth();
-      if (!x) throw redirect('/login');
+      const user = await getCurrentUser();
+      if (!user) throw redirect('/login');
+
+      return {
+        user
+      }
     },
     children: [
       { index: true, element: <TodosPage /> },
