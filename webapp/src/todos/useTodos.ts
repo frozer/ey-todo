@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteApiTodosItemIdDelete, listApiTodosGet, type Todo, type TodoUpdate } from "../api";
+import { deleteApiTodosItemIdDelete, listApiTodosGet, updateApiTodosItemIdPatch, type Todo, type TodoUpdate } from "../api";
 import { STORE_KEY } from "./types";
+import { convertApiError } from "../core/error.utils";
 
 export function useTodos() {
   const [query, setQuery] = useState<string>('');
@@ -15,20 +16,33 @@ export function useTodos() {
         ? await listApiTodosGet({query: {q: query}})
         : await listApiTodosGet();
       if (error) {
-        throw error;
+        throw convertApiError(error);
       }
       return data.items
     }
   });
 
   const { mutate: removeTodo, isPending: isRemovePending, error: removeError } = useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      if (id) {
-        const {error} = await deleteApiTodosItemIdDelete({path: {item_id: id}});
-        if (error) {
-          throw error;
-        }
-      }
+    mutationFn: async (payload: {id: string}): Promise<void> => {
+      const {error} = await deleteApiTodosItemIdDelete({path: {item_id: payload.id}});
+      if (error) {
+        throw convertApiError(error);
+      }      
+    },
+    onSuccess: async () => {      
+      await queryClient.invalidateQueries({ queryKey: STORE_KEY })
+    }      
+  });
+
+  const { mutate: updateTodo, isPending: isUpdatePending, error: updateError } = useMutation({
+    mutationFn: async (payload: {id: string, data: Partial<TodoUpdate>}): Promise<void> => {
+      const {error} = await updateApiTodosItemIdPatch({
+        path: {item_id: payload.id},
+        body: payload.data
+      });
+      if (error) {
+        throw convertApiError(error);
+      }      
     },
     onSuccess: async () => {      
       await queryClient.invalidateQueries({ queryKey: STORE_KEY })
@@ -36,13 +50,16 @@ export function useTodos() {
   });
 
   return {
-    todos: todos as unknown as Todo[],
+    todos: todos || [],
     isPending,
     query,
     error,
     setQuery,
     removeTodo,
     isRemovePending,
-    removeError
+    removeError,
+    updateTodo,
+    isUpdatePending,
+    updateError
   }
 }

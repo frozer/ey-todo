@@ -47,14 +47,24 @@ export const zTodoUpdate = z.object({
     label: z.string().min(1).nullish(),
     text: z.string().min(1).nullish(),
     status: z.string().min(1).nullish(),
-    position: z.int().gte(0).nullish()
+    position: z.int().gte(0).nullish(),
+    lft: z.uuid().nullish(),
+    rgt: z.uuid().nullish()
+});
+
+/**
+ * TodosMeta
+ */
+export const zTodosMeta = z.object({
+    has_more: z.boolean()
 });
 
 /**
  * TodosResponse
  */
 export const zTodosResponse = z.object({
-    items: z.array(zTodo)
+    items: z.array(zTodo),
+    meta: zTodosMeta
 });
 
 /**

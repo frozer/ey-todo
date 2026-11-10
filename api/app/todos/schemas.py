@@ -16,6 +16,8 @@ class TodoUpdate(BaseModel):
   text: StrippedStr | None = None
   status: StrippedStr | None = None
   position: int | None = Field(default=None, ge=0)
+  lft: uuid.UUID | None = Field(default=None)
+  rgt: uuid.UUID | None = Field(default=None)
 
 class Todo(BaseModel):
   id: uuid.UUID
@@ -27,8 +29,12 @@ class Todo(BaseModel):
   removed_at: datetime | None = None
   modified_at: datetime | None = None
 
+class TodosMeta(BaseModel):
+  has_more: bool
+  
 class TodosResponse(BaseModel):
   items: list[Todo]
+  meta: TodosMeta
 
 class FilterParams(BaseModel):
   q: str | None = Field(strip_whitespace=True,to_lower=True,default=None)

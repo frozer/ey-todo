@@ -229,10 +229,48 @@ export const TodoUpdateSchema = {
                 }
             ],
             title: 'Position'
+        },
+        lft: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Lft'
+        },
+        rgt: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rgt'
         }
     },
     type: 'object',
     title: 'TodoUpdate'
+} as const;
+
+export const TodosMetaSchema = {
+    properties: {
+        has_more: {
+            type: 'boolean',
+            title: 'Has More'
+        }
+    },
+    type: 'object',
+    required: [
+        'has_more'
+    ],
+    title: 'TodosMeta'
 } as const;
 
 export const TodosResponseSchema = {
@@ -243,11 +281,15 @@ export const TodosResponseSchema = {
             },
             type: 'array',
             title: 'Items'
+        },
+        meta: {
+            $ref: '#/components/schemas/TodosMeta'
         }
     },
     type: 'object',
     required: [
-        'items'
+        'items',
+        'meta'
     ],
     title: 'TodosResponse'
 } as const;

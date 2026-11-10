@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { createApiTodosPost, getApiTodosItemIdGet, updateApiTodosItemIdPatch, type Todo, type TodoCreate, type TodoUpdate } from "../api";
-import { STORE_KEY } from "./types";
-
-const ALLOWED_KEYS = ['label', 'text', 'status', 'position'];
+import { ALLOWED_KEYS, STORE_KEY } from "./types";
+import { convertApiError } from "../core/error.utils";
 
 const isUpdatePayload = (value: any): value is TodoUpdate => {
   return true
@@ -16,7 +15,7 @@ export function useTodo(id?: string) {
     queryFn: async (): Promise<Todo> => {
       const {data, error} = await getApiTodosItemIdGet({path: {item_id: id}});
       if (error) {
-        throw error;
+        throw convertApiError(error);
       }
       return data;
     }
@@ -28,11 +27,20 @@ export function useTodo(id?: string) {
 
       if (itemToEdit && isUpdatePayload(payload)) {
         const changedRecord: Partial<TodoUpdate> = {};
-        (Object.keys(payload) as Array<keyof TodoUpdate>).forEach((key) => {
-          if ((ALLOWED_KEYS as Array<keyof TodoUpdate>).includes(key) && payload[key] !== itemToEdit[key]) {
-            changedRecord[key] = payload[key] as any;
-          }
-        });
+        
+        if (itemToEdit.label !== payload.label)
+          changedRecord.label = payload.label;
+
+        if (itemToEdit.status !== payload.status)
+          changedRecord.status = payload.status;
+      
+        if (itemToEdit.text !== payload.text)
+          changedRecord.text = payload.text;
+        
+        if (payload.lft || payload.rgt) {
+          changedRecord.lft = payload.lft ?? null;
+          changedRecord.rgt = payload.lft ?? null;
+        }
 
         const {error: updateError} = await updateApiTodosItemIdPatch({
           path: {item_id: itemToEdit.id},
@@ -45,7 +53,7 @@ export function useTodo(id?: string) {
       }
 
       if (error) {
-        throw error;
+        throw convertApiError(error)
       }
     },
     onSuccess: async () => {      

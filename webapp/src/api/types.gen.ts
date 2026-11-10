@@ -114,6 +114,24 @@ export type TodoUpdate = {
      * Position
      */
     position?: number | null;
+    /**
+     * Lft
+     */
+    lft?: string | null;
+    /**
+     * Rgt
+     */
+    rgt?: string | null;
+};
+
+/**
+ * TodosMeta
+ */
+export type TodosMeta = {
+    /**
+     * Has More
+     */
+    has_more: boolean;
 };
 
 /**
@@ -124,6 +142,7 @@ export type TodosResponse = {
      * Items
      */
     items: Array<Todo>;
+    meta: TodosMeta;
 };
 
 /**

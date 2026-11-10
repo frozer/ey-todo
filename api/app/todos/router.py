@@ -27,11 +27,8 @@ async def list(
   if filter_query.q:
     filter["q"] = filter_query.q
 
-  items = await store.getAll(session, ctx.user_id, filter)
+  return await store.getAll(session, ctx.user_id, filter)
 
-  return TodosResponse(
-    items=items
-  )
 
 @router.post("", response_model=Todo)
 async def create(
@@ -68,7 +65,10 @@ async def update(
   ],
   clock: Annotated[Callable[[], datetime], Depends(get_clock)],
 ):
- return await store.update(session, body, item_id, ctx.user_id, clock())
+  if hasattr(body,"rgt") and hasattr(body,"rgt"):
+    return await store.reorder(session, TodoUpdate(lft=body.lft,rgt=body.rgt), item_id, ctx.user_id, clock())    
+  
+  return await store.update(session, body, item_id, ctx.user_id, clock())
 
 @router.get("/{item_id}", response_model=Todo)
 async def get(

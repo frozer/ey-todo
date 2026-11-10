@@ -12,7 +12,7 @@ export function TodoPage() {
   const { id = '' }: LocationState = location.state || {}; 
 
   const mutationOptions = useMemo(() => ({
-    onSettled: () => navigate('/')
+    onSuccess: () => navigate('/')
   }), [navigate])
 
   const {
@@ -27,16 +27,16 @@ export function TodoPage() {
 
   const mutateAction = useCallback((payload: TodoCreate | TodoUpdate) => mutate(payload, mutationOptions), []);
   const cancelAction = useCallback(() => navigate('/'), []);
-  const removeAction = useCallback(() => removeTodo(id, mutationOptions), []);
+  const removeAction = useCallback(() => removeTodo({id}, mutationOptions), []);
 
   const errorMessage = [loadError, removeError, createError]
     .map((e) => e?.message).join(' ');
   
   return (
     <section>
-      {errorMessage ? <span>{errorMessage}</span> : null}
+      {errorMessage ? <span className="error-message">{errorMessage}</span> : null}
       {isLoadPending
-        ? <span>Loading...</span>
+        ? <span className="info-message">Loading...</span>
         : <TodoForm onSubmit={mutateAction} item={itemToEdit}>
             <div className="form-footer">
               {id ? <button disabled={isRemovePending} onClick={() => removeAction()}>Remove</button> : null }

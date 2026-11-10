@@ -59,7 +59,7 @@ class TodoRow(Base):
   )
   label: Mapped[str] = mapped_column(String(50))
   text: Mapped[str] = mapped_column(String(200))
-  position: Mapped[int] = mapped_column(default=0)
+  position: Mapped[int] = mapped_column(default=0, index=True)
   status: Mapped[str] = mapped_column(String(50), default="")
   created_at: Mapped[datetime] = mapped_column(UTCDateTime())
   modified_at: Mapped[datetime | None] = mapped_column(
@@ -76,6 +76,7 @@ class TodoRow(Base):
   removed_at: Mapped[datetime | None] = mapped_column(
     UTCDateTime(),
     nullable=True,
+    index=True,
     default=None
   )
   is_removed: Mapped[bool] = mapped_column(default=False)
