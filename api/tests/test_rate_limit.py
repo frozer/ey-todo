@@ -68,3 +68,32 @@ async def test_eviction_drops_only_full_buckets():
   await limiter.check("new", 5, 1)  # third key triggers eviction
 
   assert set(limiter._buckets) == {"drained", "new"}
+
+
+async def _login_from(ip: str, creds: dict) -> int:
+  # a separate client per source IP so the per-IP bucket never trips
+  transport = ASGITransport(app=app, client=(ip, 1234))
+  async with AsyncClient(transport=transport, base_url="http://test") as c:
+    return (await c.post("/api/auth/login", json=creds)).status_code
+
+
+async def test_login_is_limited_per_username_across_ips(client, monotonic):
+  for i in range(10):
+    assert await _login_from(f"10.0.0.{i}", CREDS) == 401
+  # 11th try on "alice" from a fresh IP
+  assert await _login_from("10.0.1.1", CREDS) == 429
+
+  # other accounts are unaffected
+  bob = {"username": "bob", "password": "correct-horse-battery"}
+  assert await _login_from("10.0.1.2", bob) == 401
+
+  # 10 tokens per 15 min -> one token back after 90s
+  monotonic.advance(90)
+  assert await _login_from("10.0.2.1", CREDS) == 401
+  assert await _login_from("10.0.2.2", CREDS) == 429
+
+
+async def test_username_bucket_is_normalized(client):
+  for i in range(10):
+    assert await _login_from(f"10.0.0.{i}", {**CREDS, "username": "Alice"}) == 401
+  assert await _login_from("10.0.1.1", {**CREDS, "username": " alice "}) == 429

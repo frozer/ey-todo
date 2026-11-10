@@ -9,7 +9,7 @@ from ..core.clock import get_clock
 from ..core.errors import error_responses
 from ..database.models import UserRow
 from ..deps import SessionDep, SettingsDep, UserSessionStoreDep, UserStoreDep
-from ..net.ratelimiter import rate_limit, user_rate_limit
+from ..net.ratelimiter import RateLimiterDep, enforce, rate_limit, user_rate_limit
 from .schemas import MeResponse, RegisterBody
 from .security import (
   dummy_hash,
@@ -89,6 +89,11 @@ async def register(
       detail=[{"msg": "Given username already exists, pick another one"}]
     )
 
+# per account, whatever the source IP; checked before the lookup so unknown
+# usernames are limited the same way (no enumeration) and skip password hashing
+LOGIN_PER_USERNAME_CAPACITY = 10
+LOGIN_PER_USERNAME_REFILL = 10 / (15 * 60)
+
 @router.post("/login",
   response_model=MeResponse,
   dependencies=[rate_limit(5, 5/60)],
@@ -105,7 +110,13 @@ async def login(
   user_session_store: UserSessionStoreDep,
   settings: SettingsDep,
   clock: Annotated[Callable[[], datetime], Depends(get_clock)],
+  limiter: RateLimiterDep,
 ):
+  await enforce(
+    limiter, f"login:username:{body.username}",
+    LOGIN_PER_USERNAME_CAPACITY,
+    LOGIN_PER_USERNAME_REFILL,
+  )
   user = await user_store.get(session, body.username)
   stored = user.password_hash if user is not None else None
   

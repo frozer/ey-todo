@@ -17,7 +17,8 @@ def _route_label(request: Request) -> str:
   route_function = request.scope.get("endpoint")
   return route_function.__name__ if route_function else "unknown"
 
-async def _consume(limiter: RateLimiter, key: str, capacity: float, refill_rate_token_per_sec: float) -> None:
+async def enforce(limiter: RateLimiter, key: str, capacity: float, refill_rate_token_per_sec: float) -> None:
+  """Consume one token from `key` or raise 429; for limits that need data only the handler has."""
   d = await limiter.check(key, capacity, refill_rate_token_per_sec)
   if not d.allowed:
     raise HTTPException(
@@ -30,7 +31,7 @@ def rate_limit(capacity: float, refill_rate_token_per_sec: float):
   """Per client IP and route; for anonymous endpoints."""
   async def dep(request: Request, limiter: RateLimiterDep) -> None:
     client_ip = request.client.host if request.client else "-"
-    await _consume(limiter, f"{_route_label(request)}:ip:{client_ip}", capacity, refill_rate_token_per_sec)
+    await enforce(limiter, f"{_route_label(request)}:ip:{client_ip}", capacity, refill_rate_token_per_sec)
 
   return Depends(dep)
 
@@ -42,6 +43,6 @@ def user_rate_limit(capacity: float, refill_rate_token_per_sec: float):
     # cached per request: shares the endpoint's own require_user_session call
     ctx: Annotated[UserContext, Depends(require_user_session)],
   ) -> None:
-    await _consume(limiter, f"{_route_label(request)}:user:{ctx.user_id}", capacity, refill_rate_token_per_sec)
+    await enforce(limiter, f"{_route_label(request)}:user:{ctx.user_id}", capacity, refill_rate_token_per_sec)
 
   return Depends(dep)
