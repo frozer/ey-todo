@@ -159,7 +159,6 @@ All routes are under `/api`, need a session cookie (401 `not_authenticated` othe
 |/auth/register |POST|{username, password}|Register a new user|
 |/auth/login    |POST|{username, password}|Creates per-session cookie|
 |/auth/me       |GET||Returns the actual user|
-|/auth/{user}   |PATCH|{password}|change password|
 |/auth/logout   |POST||logout the user|
 
 **Cookie Configuration**
