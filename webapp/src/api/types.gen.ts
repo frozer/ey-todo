@@ -231,6 +231,10 @@ export type RegisterApiAuthRegisterPostErrors = {
      * data validation failure
      */
     422: unknown;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type RegisterApiAuthRegisterPostError = RegisterApiAuthRegisterPostErrors[keyof RegisterApiAuthRegisterPostErrors];
@@ -260,6 +264,10 @@ export type LoginApiAuthLoginPostErrors = {
      * Validation Error
      */
     422: HttpValidationError;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type LoginApiAuthLoginPostError = LoginApiAuthLoginPostErrors[keyof LoginApiAuthLoginPostErrors];
@@ -285,6 +293,10 @@ export type MeApiAuthMeGetErrors = {
      * not_authenticated
      */
     401: ErrorResponse;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type MeApiAuthMeGetError = MeApiAuthMeGetErrors[keyof MeApiAuthMeGetErrors];
@@ -314,6 +326,10 @@ export type LogoutApiAuthLogoutPostErrors = {
      * csrf_failed
      */
     403: ErrorResponse;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type LogoutApiAuthLogoutPostError = LogoutApiAuthLogoutPostErrors[keyof LogoutApiAuthLogoutPostErrors];
@@ -342,6 +358,10 @@ export type ListApiTodosGetErrors = {
      * Validation Error
      */
     422: HttpValidationError;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type ListApiTodosGetError = ListApiTodosGetErrors[keyof ListApiTodosGetErrors];
@@ -371,6 +391,10 @@ export type CreateApiTodosPostErrors = {
      * Validation Error
      */
     422: HttpValidationError;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type CreateApiTodosPostError = CreateApiTodosPostErrors[keyof CreateApiTodosPostErrors];
@@ -409,6 +433,10 @@ export type DeleteApiTodosItemIdDeleteErrors = {
      * Validation Error
      */
     422: HttpValidationError;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type DeleteApiTodosItemIdDeleteError = DeleteApiTodosItemIdDeleteErrors[keyof DeleteApiTodosItemIdDeleteErrors];
@@ -443,6 +471,10 @@ export type GetApiTodosItemIdGetErrors = {
      * Validation Error
      */
     422: HttpValidationError;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type GetApiTodosItemIdGetError = GetApiTodosItemIdGetErrors[keyof GetApiTodosItemIdGetErrors];
@@ -485,6 +517,10 @@ export type UpdateApiTodosItemIdPatchErrors = {
      * Validation Error
      */
     422: HttpValidationError;
+    /**
+     * rate_limited
+     */
+    429: ErrorResponse;
 };
 
 export type UpdateApiTodosItemIdPatchError = UpdateApiTodosItemIdPatchErrors[keyof UpdateApiTodosItemIdPatchErrors];

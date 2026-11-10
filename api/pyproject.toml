@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.22.1",
     "alembic>=1.18.4",
     "argon2-cffi>=25.1.0",
     "asyncpg>=0.31.0",
@@ -21,7 +22,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "aiosqlite>=0.22.1",
     "httpx>=0.28.1",
     "pytest-asyncio>=1.4.0",
     "pytest>=9.1.0",

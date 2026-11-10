@@ -4,9 +4,11 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
-    heyApiPlugin({
+    // regenerates src/api from the running backend; dev-only so `vite build`
+    // (e.g. in Docker) works without the API up and uses the committed client
+    command === 'serve' && heyApiPlugin({
       config: {
         input: 'http://localhost:9000/openapi.json',
         output: 'src/api',
@@ -35,4 +37,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

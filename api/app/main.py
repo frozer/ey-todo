@@ -10,6 +10,7 @@ from .core.config import Settings, get_settings
 from .core.origin import origin_check_middleware
 from .todos.router import router as todo_router
 from .todos.service import InvalidNeighbours, TodoNotFound
+from .webapp.router import mount_webapp
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
@@ -59,6 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_router, prefix="/api")
     app.include_router(todo_router, prefix="/api")
 
+    # catch-all SPA route: must be registered after every other route
+    mount_webapp(app, settings.webapp_dir)
     return app
 
 

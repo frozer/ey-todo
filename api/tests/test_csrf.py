@@ -1,7 +1,8 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
+from app.deps import get_session
 from app.main import create_app
 
 pytestmark = pytest.mark.asyncio
@@ -81,15 +82,65 @@ async def test_foreign_referer_without_origin_is_rejected(auth_client):
   assert resp.status_code == 403
 
 
-async def test_trusted_origin_is_accepted(auth_client):
+async def test_trusted_origin_is_accepted(session_factory):
+  async with _origin_client(session_factory, trusted_origins=["http://app.example"]) as c:
+    resp = await c.post("/api/auth/register", json=CREDS, headers={"Origin": "http://app.example"})
+    assert resp.status_code == 200
+
+    resp = await c.post(
+      "/api/auth/login", json=CREDS, headers={"Referer": "http://APP.example/login?from=/"}
+    )
+    assert resp.status_code == 200
+
+
+@pytest.mark.parametrize("origin", ["http://test", "http://TEST", "http://test/"])
+async def test_same_origin_is_accepted_without_config(auth_client, origin):
+  # SPA served by this server: Origin equals the Host the request was sent to
+  resp = await auth_client.post("/api/auth/login", json=CREDS, headers={"Origin": origin})
+  assert resp.status_code == 200
+
+
+async def test_same_origin_referer_is_accepted(auth_client):
   resp = await auth_client.post(
-    "/api/auth/login", json=CREDS, headers={"Origin": "http://localhost:5173"}
+    "/api/auth/login", json=CREDS, headers={"Referer": "http://test/login"}
   )
   assert resp.status_code == 200
 
+
+async def test_vite_dev_proxy_is_same_origin(auth_client):
+  # the dev proxy forwards the browser's Host unchanged
   resp = await auth_client.post(
-    "/api/auth/login", json=CREDS, headers={"Referer": "http://localhost:5173/login?from=/"}
+    "/api/auth/login",
+    json=CREDS,
+    headers={"Host": "localhost:5173", "Origin": "http://localhost:5173"},
   )
+  assert resp.status_code == 200
+
+
+@pytest.mark.parametrize("origin", ["https://test", "http://test:8080", "http://evil.test"])
+async def test_origin_must_match_scheme_host_and_port(auth_client, origin):
+  resp = await auth_client.post("/api/auth/login", json=CREDS, headers={"Origin": origin})
+  assert resp.status_code == 403
+
+
+async def test_sec_fetch_site_same_origin_is_accepted(auth_client):
+  # e.g. behind a proxy that rewrites Host: the browser's own verdict still counts
+  resp = await auth_client.post(
+    "/api/auth/login",
+    json=CREDS,
+    headers={"Sec-Fetch-Site": "same-origin", "Origin": "https://todo.example"},
+  )
+  assert resp.status_code == 200
+
+
+@pytest.mark.parametrize("site", ["cross-site", "same-site", "none"])
+async def test_other_sec_fetch_site_values_fall_back_to_origin(auth_client, site):
+  headers = {"Sec-Fetch-Site": site, "Origin": "https://evil.example"}
+  resp = await auth_client.post("/api/auth/login", json=CREDS, headers=headers)
+  assert resp.status_code == 403
+
+  headers = {"Sec-Fetch-Site": site, "Origin": "http://test"}
+  resp = await auth_client.post("/api/auth/login", json=CREDS, headers=headers)
   assert resp.status_code == 200
 
 
@@ -100,6 +151,20 @@ async def test_no_origin_and_no_referer_is_accepted(auth_client):
 async def test_safe_methods_skip_origin_check(auth_client):
   resp = await auth_client.get("/api/auth/me", headers={"Origin": "https://evil.example"})
   assert resp.status_code == 200
+
+
+# --- helpers -------------------------------------------------------------------
+
+def _origin_client(session_factory, **settings) -> AsyncClient:
+  app = create_app(Settings(environment="DEV", **settings))
+
+  async def override_session():
+    async with session_factory() as session:
+      yield session
+
+  app.dependency_overrides[get_session] = override_session
+  app.dependency_overrides[get_settings] = lambda: Settings(environment="DEV", **settings)
+  return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
 # --- CORS --------------------------------------------------------------------------

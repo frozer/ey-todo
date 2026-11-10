@@ -18,8 +18,13 @@ class Settings(BaseSettings):
     # origins allowed to call the API cross-origin; empty = same-origin only (no CORS headers)
     cors_origins: list[str] = []
 
-    # origins accepted on unsafe requests (Origin / Referer check against CSRF)
-    trusted_origins: list[str] = ["http://localhost:5173"]
+    # extra origins accepted on unsafe requests (Origin / Referer check against CSRF);
+    # same-origin requests (SPA served by this server, or via the Vite dev proxy)
+    # are always accepted, so this is only for front-ends on a different origin
+    trusted_origins: list[str] = []
+
+    # SPA to serve from /; None = API only
+    webapp_dir: str | None = None
 
 @lru_cache
 def get_settings() -> Settings:
