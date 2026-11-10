@@ -53,6 +53,15 @@ class UserSessionStore:
 
     return existing_session
 
+  async def delete(
+    self,
+    session: AsyncSession,
+    session_hash: str
+  ) -> None:
+    stmt = delete(SessionRow).where(SessionRow.session_hash == session_hash)
+    await session.execute(stmt, execution_options={"synchronize_session": "fetch"})
+    await session.commit()
+
   async def clear(
     self,
     session: AsyncSession,

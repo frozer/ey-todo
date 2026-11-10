@@ -30,12 +30,12 @@ def _not_authenticated() -> HTTPException:
 def _session_token(request: Request, is_dev: bool = False) -> str:
   return request.cookies.get(get_cookie_key(is_dev))
 
-def _session_is_expired(user_session: SessionRow, now: datetime, session_idle: int) -> bool:
-  idle_deadline = user_session.last_seen_at + timedelta(days=session_idle)
-  return idle_deadline < now or is_past(user_session.expires_at, now)
+def _session_is_expired(user_session: SessionRow, now: datetime, idle_minutes: int) -> bool:
+  idle_deadline = user_session.last_seen_at + timedelta(minutes=idle_minutes)
+  return is_past(idle_deadline, now) or is_past(user_session.expires_at, now)
 
-def _session_is_live(user_session: SessionRow, now: datetime, session_idle: int) -> bool:
-  return not _session_is_expired(user_session, now, session_idle)
+def _session_is_live(user_session: SessionRow, now: datetime, idle_minutes: int) -> bool:
+  return not _session_is_expired(user_session, now, idle_minutes)
 
 async def _authenticate(
   request: Request,
@@ -49,27 +49,23 @@ async def _authenticate(
     raise _not_authenticated()
 
   session_hash = hash_session_token(token)
-  context: UserContext | None = None
 
   user_session = await user_session_store.get(session, session_hash)
 
   if user_session is None:
     raise _not_authenticated()
-  
-  if _session_is_live(user_session, now, settings.session_idle_expire_minutes):
-    await user_session_store.update_last_seen(session, session_hash, now)
-    context = UserContext(
-      user_id=user_session.user.id,
-      username=user_session.user.username,
-      session_hash=session_hash,
-    )
 
-  elif _session_is_expired(user_session, now):
-    await user_session_store.clear(session, session_hash)
-
-  if context is None:
+  if not _session_is_live(user_session, now, settings.session_idle_expire_minutes):
+    await user_session_store.delete(session, session_hash)
     raise _not_authenticated()
-    
+
+  context = UserContext(
+    user_id=user_session.user.id,
+    username=user_session.user.username,
+    session_hash=session_hash,
+  )
+  await user_session_store.update_last_seen(session, session_hash, now)
+
   return context
 
 async def set_session_cookie(
