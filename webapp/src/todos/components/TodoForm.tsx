@@ -21,13 +21,15 @@ export function TodoForm({onSubmit, children, item}: {
 
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input {...register("label")} placeholder="Add title"/>
-      {errors?.label && <span>{errors.label?.message}</span>}
-      
-      <label>
+    <form className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-4 sm:p-6" onSubmit={handleSubmit(onSubmit)}>
+      <div className="field">
+        <input className="input text-base font-medium" {...register("label")} placeholder="Add title"/>
+        {errors?.label && <span className="field-error">{errors.label?.message}</span>}
+      </div>
+
+      <label className="field">
         <span>Description</span>
-        <textarea {...register("text")} />
+        <textarea className="input min-h-32 resize-y" {...register("text")} />
       </label>
 
       {children}

@@ -16,11 +16,11 @@ export function TodosPage() {
     isUpdatePending
   } = useTodos();
 
-  const onQuery = useCallback((q: string) => setQuery(q), []);
+  const onQuery = useCallback((q: string) => setQuery(q), [setQuery]);
 
-  const removeAction = useCallback((id: string) => removeTodo({id}), []);
-  const createAction = useCallback(() => navigate('todo'), []);
-  const editAction = useCallback((id: string) => navigate('todo', {state: {id}}), []);
+  const removeAction = useCallback((id: string) => removeTodo({id}), [removeTodo]);
+  const createAction = useCallback(() => navigate('todo'), [navigate]);
+  const editAction = useCallback((id: string) => navigate('todo', {state: {id}}), [navigate]);
   const changePosition = useCallback((id: string, idx: number, direction: 'UP' | 'DOWN') => {
     let lft, rgt;
 
@@ -35,17 +35,17 @@ export function TodosPage() {
     }
 
     updateTodo({id, data: {lft,rgt}});
-  }, [todos])
+  }, [todos, updateTodo])
 
   const errorMessage = useMemo(() => [error, updateError]
-    .map((e) => e?.message).join(' '), []);
+    .map((e) => e?.message).filter(Boolean).join(' '), [error, updateError]);
 
   return (
-    <section>
+    <section className="w-full max-w-2xl space-y-4">
       {errorMessage && <span className="error-message">{errorMessage}</span>}
-      <header>
-        <input type="text" onChange={(e) => onQuery(e.target.value)} placeholder="Search..."></input>
-        <button type="button" onClick={() => createAction()}>New Todo</button>
+      <header className="flex flex-col gap-2 sm:flex-row">
+        <input type="search" className="input sm:flex-1" onChange={(e) => onQuery(e.target.value)} placeholder="Search..."></input>
+        <button type="button" className="btn btn-primary" onClick={() => createAction()}>New Todo</button>
       </header>
       {isPending ? <span className="info-message">Loading...</span> : null }
   

@@ -25,22 +25,22 @@ export function LoginForm({action}: {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
       {serverError !== null && <span className="error-message">{serverError}</span>}
-      
-      <label>
+
+      <label className="field">
         <span>Username</span>
-        <input {...register("username")}/>
-        {errors?.username && <span>{errors.username?.message}</span>}
+        <input className="input" autoComplete="username" {...register("username")}/>
+        {errors?.username && <span className="field-error">{errors.username?.message}</span>}
       </label>
-      
-      <label>
+
+      <label className="field">
         <span>Password</span>
-        <input type="password" {...register("password")} />
-        {errors?.password && <span>{errors.password?.message}</span>}
+        <input className="input" type="password" autoComplete="current-password" {...register("password")} />
+        {errors?.password && <span className="field-error">{errors.password?.message}</span>}
       </label>
-      
-      <button type="submit" disabled={isSubmitting}>Submit</button>
+
+      <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>Submit</button>
     </form>
   )
 }

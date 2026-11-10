@@ -29,12 +29,17 @@ export function LoginPage(options: {
   }
 
   return (
-    <main>
-      <h1>{mode === 'LOGIN' ? 'Log in' : 'Register' }</h1>
-      <LoginForm action={loginAction} />
-      <button onClick={() => setMode(mode => mode === 'LOGIN' ? 'REGISTER' : 'LOGIN')}>
-        {mode === 'LOGIN' ? 'No account? Sign up!' : 'Already have one? Log in!' }
-      </button>
+    <main className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-sm space-y-4 rounded-lg border border-line bg-surface p-6">
+        <h1 className="text-xl font-semibold">{mode === 'LOGIN' ? 'Log in' : 'Register' }</h1>
+        <LoginForm action={loginAction} />
+        <button
+          type="button"
+          className="btn-link w-full text-center text-sm"
+          onClick={() => setMode(mode => mode === 'LOGIN' ? 'REGISTER' : 'LOGIN')}>
+          {mode === 'LOGIN' ? 'No account? Sign up!' : 'Already have one? Log in!' }
+        </button>
+      </div>
     </main>
   )
 }

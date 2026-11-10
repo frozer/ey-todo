@@ -25,23 +25,27 @@ export function TodoPage() {
   } = useTodo(id);
   const {removeTodo, isRemovePending, removeError} = useTodos();
 
-  const mutateAction = useCallback((payload: TodoCreate | TodoUpdate) => mutate(payload, mutationOptions), []);
-  const cancelAction = useCallback(() => navigate('/'), []);
-  const removeAction = useCallback(() => removeTodo({id}, mutationOptions), []);
+  const mutateAction = useCallback(
+    (payload: TodoCreate | TodoUpdate) => mutate(payload, mutationOptions),
+    [mutate, mutationOptions]);
+  const cancelAction = useCallback(() => navigate('/'), [navigate]);
+  const removeAction = useCallback(
+    () => removeTodo({id}, mutationOptions),
+    [removeTodo, id, mutationOptions]);
 
   const errorMessage = useMemo(() => [loadError, removeError, createError]
-    .map((e) => e?.message).join(' '), [loadError, removeError, createError]);
-  
+    .map((e) => e?.message).filter(Boolean).join(' '), [loadError, removeError, createError]);
+
   return (
-    <section>
+    <section className="w-full max-w-2xl space-y-4">
       {errorMessage && <span className="error-message">{errorMessage}</span>}
       {isLoadPending
         ? <span className="info-message">Loading...</span>
         : <TodoForm onSubmit={mutateAction} item={itemToEdit}>
             <div className="form-footer">
-              {id && <button disabled={isRemovePending} onClick={() => removeAction()}>Remove</button>}
-              <button type="submit" disabled={isCreatePending}>Save</button>
-              <button onClick={() => cancelAction()}>Cancel</button>
+              {id && <button type="button" className="btn btn-danger mr-auto" disabled={isRemovePending} onClick={() => removeAction()}>Remove</button>}
+              <button type="button" className="btn" onClick={() => cancelAction()}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={isCreatePending}>Save</button>
             </div>
           </TodoForm>
       }

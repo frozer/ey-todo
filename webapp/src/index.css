@@ -1,22 +1,91 @@
-:root {
-  --bg: #0e1116;
-  --text: #e6edf3;
+@import "tailwindcss";
 
-  font: 15px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
-  color: var(--text);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
+  --canvas: #0f1319;
+  --surface: #151a21;
+  --ink: #e8ecf2;
+  --muted: #9aa4b2;
+  --line: #333b47;
+  --raised: #1a2029;
+  --accent: #5b93f7;
+  --accent-strong: #7fa9f9;
+  --accent-ink: #0f1319;
+  --link: #8ab4ff;
+  --focus: #6b9cff;
+  --fill-info: #1d2a3f;
+  --danger: #ff8a80;
+  --fill-danger: #2a1716;
+  --line-danger: #7a2e27;
 }
 
-* {
-  box-sizing: border-box;
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-raised: var(--raised);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-link: var(--link);
+  --color-focus: var(--focus);
+  --color-fill-info: var(--fill-info);
+  --color-danger: var(--danger);
+  --color-fill-danger: var(--fill-danger);
+  --color-line-danger: var(--line-danger);
 }
 
-body {
-  margin: 0;
+@layer base {
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
 }
 
-#root {
-  min-height: 100vh;
+@layer components {
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-md border border-line bg-raised px-3 py-1.5 text-sm font-medium hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply border-transparent bg-accent text-accent-ink hover:bg-accent-strong;
+  }
+
+  .btn-danger {
+    @apply border-line-danger text-danger hover:bg-fill-danger;
+  }
+
+  .btn-link {
+    @apply cursor-pointer text-link hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-sm placeholder:text-muted focus:outline-2 focus:outline-focus;
+  }
+
+  .field {
+    @apply flex flex-col gap-1 text-sm;
+  }
+
+  .field-error {
+    @apply text-xs text-danger;
+  }
+
+  .error-message {
+    @apply block rounded-md border border-line-danger bg-fill-danger px-3 py-2 text-sm text-danger;
+  }
+
+  .info-message {
+    @apply block rounded-md bg-fill-info px-3 py-2 text-sm text-muted;
+  }
+
+  .form-footer {
+    @apply flex flex-wrap justify-end gap-2;
+  }
 }
