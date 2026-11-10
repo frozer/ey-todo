@@ -3,63 +3,53 @@ import { createApiTodosPost, getApiTodosItemIdGet, updateApiTodosItemIdPatch, ty
 import { STORE_KEY } from "./types";
 import { convertApiError } from "../core/error.utils";
 
-const isUpdatePayload = (value: any): value is TodoUpdate => {
-  return true
+function diffTodo(original: Todo, payload: TodoUpdate): TodoUpdate {
+  const changed: TodoUpdate = {};
+
+  if (original.label !== payload.label) changed.label = payload.label;
+  if (original.status !== payload.status) changed.status = payload.status;
+  if (original.text !== payload.text) changed.text = payload.text;
+
+  if (payload.lft || payload.rgt) {
+    changed.lft = payload.lft ?? null;
+    changed.rgt = payload.rgt ?? null;
+  }
+
+  return changed;
 }
 
 export function useTodo(id?: string) {
   const queryClient = useQueryClient();
 
-  const {data: itemToEdit = null, isPending : isLoadPending = false, error: loadError} = id ? useQuery({
+  const { data: itemToEdit = null, isLoading: isLoadPending, error: loadError } = useQuery({
     queryKey: [...STORE_KEY, id],
     queryFn: async (): Promise<Todo> => {
-      const {data, error} = await getApiTodosItemIdGet({path: {item_id: id}});
+      const { data, error } = await getApiTodosItemIdGet({ path: { item_id: id! } });
       if (error) {
         throw convertApiError(error);
       }
       return data;
-    }
-  }) : {};
+    },
+    enabled: !!id,
+  });
 
   const { mutate, error: createError, isPending: isCreatePending, isSuccess } = useMutation({
     mutationFn: async (payload: TodoCreate | TodoUpdate): Promise<void> => {
-      let error = null;
-
-      if (itemToEdit && isUpdatePayload(payload)) {
-        const changedRecord: Partial<TodoUpdate> = {};
-        
-        if (itemToEdit.label !== payload.label)
-          changedRecord.label = payload.label;
-
-        if (itemToEdit.status !== payload.status)
-          changedRecord.status = payload.status;
-      
-        if (itemToEdit.text !== payload.text)
-          changedRecord.text = payload.text;
-        
-        if (payload.lft || payload.rgt) {
-          changedRecord.lft = payload.lft ?? null;
-          changedRecord.rgt = payload.rgt ?? null;
-        }
-
-        const {error: updateError} = await updateApiTodosItemIdPatch({
-          path: {item_id: itemToEdit.id},
-          body: changedRecord
-        });
-        error = updateError;
-      } else {
-        const {error: createError} = await createApiTodosPost({body: payload as TodoCreate});
-        error = createError;
-      }
+      const { error } = itemToEdit
+        ? await updateApiTodosItemIdPatch({
+            path: { item_id: itemToEdit.id },
+            body: diffTodo(itemToEdit, payload),
+          })
+        : await createApiTodosPost({ body: payload as TodoCreate });
 
       if (error) {
-        throw convertApiError(error)
+        throw convertApiError(error);
       }
     },
-    onSuccess: async () => {      
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: STORE_KEY });
-    }      
-  })
+    },
+  });
 
   return {
     mutate,
@@ -68,6 +58,6 @@ export function useTodo(id?: string) {
     isLoadPending,
     itemToEdit,
     loadError,
-    isSuccess
-  }
+    isSuccess,
+  };
 }
