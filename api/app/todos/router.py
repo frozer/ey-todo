@@ -9,9 +9,16 @@ from ..auth.session import UserContext, require_user_session
 from ..core.clock import get_clock
 from ..core.errors import error_responses
 from ..deps import SessionDep, TodoStoreDep
+from ..net.ratelimiter import user_rate_limit
 from .schemas import FilterParams, Todo, TodoCreate, TodosResponse, TodoUpdate
 
-router = APIRouter(prefix="/todos", tags=["todo"])
+router = APIRouter(
+  prefix="/todos",
+  tags=["todo"],
+  # per user and per route; 30-request burst covers drag-reorder bursts
+  dependencies=[user_rate_limit(30, 5)],
+  responses=error_responses((status.HTTP_429_TOO_MANY_REQUESTS, "rate_limited")),
+)
 
 @router.get("", response_model=TodosResponse)
 async def list(

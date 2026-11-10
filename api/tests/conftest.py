@@ -11,6 +11,8 @@ from app.core.config import Settings, get_settings
 from app.database.models import Base
 from app.deps import get_session
 from app.main import app
+from app.net.ratelimiter import get_rate_limiter
+from app.net.service import InMemoryTokenBucket
 
 
 class FakeClock:
@@ -44,9 +46,26 @@ def clock() -> FakeClock:
   return FakeClock()
 
 
+class FakeMonotonic:
+  def __init__(self) -> None:
+    self.now = 1000.0
+
+  def advance(self, seconds: float) -> None:
+    self.now += seconds
+
+  def __call__(self) -> float:
+    return self.now
+
+
 @pytest_asyncio.fixture
-async def client(session_factory, clock) -> AsyncIterator[AsyncClient]:
+def monotonic() -> FakeMonotonic:
+  return FakeMonotonic()
+
+
+@pytest_asyncio.fixture
+async def client(session_factory, clock, monotonic) -> AsyncIterator[AsyncClient]:
   settings = Settings(environment="DEV")
+  limiter = InMemoryTokenBucket(now=monotonic)
 
   async def override_session() -> AsyncIterator[AsyncSession]:
     async with session_factory() as session:
@@ -55,6 +74,7 @@ async def client(session_factory, clock) -> AsyncIterator[AsyncClient]:
   app.dependency_overrides[get_session] = override_session
   app.dependency_overrides[get_settings] = lambda: settings
   app.dependency_overrides[get_clock] = lambda: clock
+  app.dependency_overrides[get_rate_limiter] = lambda: limiter
 
   async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
     yield c

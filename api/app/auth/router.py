@@ -9,6 +9,7 @@ from ..core.clock import get_clock
 from ..core.errors import error_responses
 from ..database.models import UserRow
 from ..deps import SessionDep, SettingsDep, UserSessionStoreDep, UserStoreDep
+from ..net.ratelimiter import rate_limit, user_rate_limit
 from .schemas import MeResponse, RegisterBody
 from .security import (
   dummy_hash,
@@ -37,9 +38,13 @@ def _failure_reason(user: UserRow | None, password_ok: bool) -> str | None:
 
 @router.post("/register",
   response_model=MeResponse,
+  dependencies=[rate_limit(5, 1)],
   responses={
     status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "data validation failure"},
-    **error_responses((status.HTTP_409_CONFLICT, "Given username already exists, pick another one")),
+    **error_responses(
+      (status.HTTP_409_CONFLICT, "Given username already exists, pick another one"),
+      (status.HTTP_429_TOO_MANY_REQUESTS, "rate_limited"),
+    ),
   }
 )
 async def register(
@@ -86,7 +91,11 @@ async def register(
 
 @router.post("/login",
   response_model=MeResponse,
-  responses=error_responses((status.HTTP_401_UNAUTHORIZED, "invalid_credentials"))
+  dependencies=[rate_limit(5, 5/60)],
+  responses=error_responses(
+    (status.HTTP_401_UNAUTHORIZED, "invalid_credentials"),
+    (status.HTTP_429_TOO_MANY_REQUESTS, "rate_limited")
+  )
 )
 async def login(
   body: RegisterBody,
@@ -118,9 +127,14 @@ async def login(
 
   return MeResponse(username=body.username, csrf_token=csrf_token)
 
-@router.get("/me", 
-            response_model=MeResponse,
-            responses=error_responses((status.HTTP_401_UNAUTHORIZED, "not_authenticated")))
+@router.get("/me",
+  response_model=MeResponse,
+  dependencies=[user_rate_limit(20, 2)],
+  responses=error_responses(
+    (status.HTTP_401_UNAUTHORIZED, "not_authenticated"),
+    (status.HTTP_429_TOO_MANY_REQUESTS, "rate_limited")
+  )
+)
 async def me(
   ctx: Annotated[
         UserContext, Depends(require_user_session)
@@ -133,9 +147,11 @@ async def me(
 
 @router.post("/logout",
   response_model=None,
+  dependencies=[user_rate_limit(5, 1)],
   responses=error_responses(
     (status.HTTP_401_UNAUTHORIZED, "not_authenticated"),
     (status.HTTP_403_FORBIDDEN, "csrf_failed"),
+    (status.HTTP_429_TOO_MANY_REQUESTS, "rate_limited")
   )
 )
 async def logout(
