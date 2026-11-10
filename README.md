@@ -49,7 +49,7 @@ Finally, I packaged the application in a Docker container so it would be ready f
 * CSRF route protection
 * sparse ordering for todo list items
 
-### Potential next steps / improvements (~4-5 man/days)
+### Potential next steps / improvements (~2-3 man/days)
 - **Idempotency key:** UUID key per intent — client generates a unique key per intent; server dedups (key → result) and have the 5sec short-lived cache for the order ID, preventing to send two parallel requests; retries are safe.
 - **Full multi-session support:** Prevent one session from overwriting changes made by another (optimistic locking/versioning) and synchronize task lists across sessions using long polling, WebSockets, or Server-Sent Events (SSE).
 - **Pagination:** Support paginated task retrieval.
@@ -130,14 +130,19 @@ Relationships
 > SQLite does not enforce `VARCHAR(n)` lengths: limits hold only where the API validates them.
 
 ### Business API surface
-|API|Method|Payload|Note|
-|-|-|-|-|
-|/todos         |GET||return list of todos|
-|/todos         |POST|{label, text}|create a new todo|
-|/todos/{id}    |GET||return specific todo|
-|/todos/{id}    |PATCH|{label, text, position}|update the given todo|
-|/todos/{id}    |DELETE||remove the given todo|
-|/todos/q?      |GET|{q}||
+
+All routes are under `/api`, need a session cookie (401 `not_authenticated` otherwise) and only see the caller's own todos: someone else's id gives 404 `todo_not_found`. Unsafe methods also need the `X-CSRF-Token` header (403 `csrf_failed`).
+
+|API|Method|Payload / query|Response|Note|
+|-|-|-|-|-|
+|`/todos`|GET|`?q=<text>` optional|`{items: Todo[], meta: {has_more}}`|active todos ordered by `position`; `q` = case-insensitive substring match on `label`; returns at most 100 items (no paging params yet)|
+|`/todos`|POST|`{label, text?, status?}`|`Todo`|new todo is placed at the top of the list|
+|`/todos/{id}`|GET||`Todo`||
+|`/todos/{id}`|PATCH|`{label?, text?, status?}`|`Todo`|edit: only the fields sent are changed; `null` label/status are ignored|
+|`/todos/{id}`|PATCH|`{lft?, rgt?}`|`Todo`|reorder: ids of the todos that should end up directly before (`lft`) and after (`rgt`) it; omit one to move to an end. Can't be combined with edit fields (422); 409 `stale_order` if `lft` no longer comes before `rgt` (e.g. the list changed in another session)|
+|`/todos/{id}`|DELETE||`Todo`|soft delete: sets `is_removed`/`removed_at`; the todo disappears from all reads|
+
+`Todo` = `{id, label, text, status, position, created_at, modified_at, removed_at}`. Field limits: `label` 1–50 chars, `text` up to 200 chars, both trimmed.
 
 ### Authentication
 * password hashing - Argon2id
@@ -168,15 +173,19 @@ Sessions are stored in the `sessions` table (see [Data Storage](#data-storage)).
 
 ### Others
 **Rate Limit**
-|Endpoint|Dimension|Limit|Algorithm|Why|
+
+Token bucket per key: *burst* = bucket capacity, *refill* = tokens added back over time. A rejected request gets `429 rate_limited` with a `Retry-After` header. Buckets are kept per route handler, so e.g. `GET /todos` and `POST /todos` have separate quotas.
+
+|Endpoint|Key|Burst|Refill|Notes|
 |-|-|-|-|-|
-|/auth/register |per-IP|5, 1|token bucket||
-|/auth/login    |per-IP/per-user|5, 5/60s|token bucket||
-|/auth/me       |per-user|20, 2/s|token bucket||
-|/auth/logout   |per-user|5, 1/s|token bucket||
-|/todos         |per-user|30, 1/s|token bucket||
-|/todos/{id}    |per-user|30, 1/s|token bucket||
-|/todos/search? |per-user|30, 5/s|token bucket||
+|`POST /auth/register`|client IP|5|1/s||
+|`POST /auth/login`|client IP|5|5/min|brute-force guard per source|
+|`POST /auth/login`|submitted username|10|10/15 min|guards one account against distributed guessing; checked in addition to the IP limit|
+|`GET /auth/me`|user|20|2/s|called by the frontend on every page load|
+|`POST /auth/logout`|user|5|1/s||
+|`/todos` (all routes, incl. `?q=` search)|user|30|5/s|set on the router; the burst covers drag-reorder bursts|
+
+Per-IP keys use the connection's client address: behind a load balancer or reverse proxy set `FORWARDED_ALLOW_IPS`, otherwise every client shares the proxy's IP and one quota. Limits are kept in memory per process (see [Limitations](#limitations)).
 
 **CSRF origin check**
 
