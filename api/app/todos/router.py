@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from ..auth.session import UserContext, require_user_session
 from ..core.clock import get_clock
+from ..core.errors import error_responses
 from ..deps import SessionDep, TodoStoreDep
 from .schemas import FilterParams, Todo, TodoCreate, TodosResponse, TodoUpdate
 
@@ -30,7 +31,7 @@ async def list(
   return await store.getAll(session, ctx.user_id, filter)
 
 
-@router.post("", response_model=Todo)
+@router.post("", response_model=Todo, responses=error_responses((status.HTTP_403_FORBIDDEN, "csrf_failed")))
 async def create(
   body: TodoCreate,
   session: SessionDep,
@@ -42,7 +43,14 @@ async def create(
 ):
   return await store.create(session, body, ctx.user_id, clock())
 
-@router.delete("/{item_id}", response_model=Todo, responses={status.HTTP_404_NOT_FOUND: {"description": "todo_not_found"}})
+@router.delete(
+  "/{item_id}",
+  response_model=Todo,
+  responses=error_responses(
+    (status.HTTP_403_FORBIDDEN, "csrf_failed"),
+    (status.HTTP_404_NOT_FOUND, "todo_not_found"),
+  )
+)
 async def delete(
   item_id: uuid.UUID,
   session: SessionDep,
@@ -57,10 +65,11 @@ async def delete(
 @router.patch(
   "/{item_id}",
   response_model=Todo,
-  responses={
-    status.HTTP_404_NOT_FOUND: {"description": "todo_not_found"},
-    status.HTTP_409_CONFLICT: {"description": "stale_order"},
-  }
+  responses=error_responses(
+    (status.HTTP_403_FORBIDDEN, "csrf_failed"),
+    (status.HTTP_404_NOT_FOUND, "todo_not_found"),
+    (status.HTTP_409_CONFLICT, "stale_order"),
+  )
 )
 async def update(
   item_id: uuid.UUID,
@@ -82,7 +91,7 @@ async def update(
 
   return await store.update(session, body, item_id, ctx.user_id, clock())
 
-@router.get("/{item_id}", response_model=Todo, responses={status.HTTP_404_NOT_FOUND: {"description": "todo_not_found"}})
+@router.get("/{item_id}", response_model=Todo, responses=error_responses((status.HTTP_404_NOT_FOUND, "todo_not_found")))
 async def get(
   item_id: uuid.UUID,
   session: SessionDep,

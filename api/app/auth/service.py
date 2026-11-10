@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -14,11 +14,13 @@ class UserSessionStore:
     session: AsyncSession,
     user_id: str,
     session_hash: str,
-    now: datetime
+    now: datetime,
+    csrf_token: str
   ) -> SessionRow:
     row = SessionRow(
       user_id=user_id,
       session_hash=session_hash,
+      csrf_token=csrf_token,
       last_seen_at=now,
       expires_at=now + timedelta(days=get_settings().session_expire_days),
     )
@@ -52,6 +54,19 @@ class UserSessionStore:
       await session.commit()
 
     return existing_session
+
+  async def revoke(
+    self,
+    session: AsyncSession,
+    session_hash: str,
+    now: datetime
+  ) -> None:
+    stmt = update(SessionRow).where(
+      SessionRow.session_hash == session_hash,
+      SessionRow.revoked_at.is_(None)
+    ).values(revoked_at=now)
+    await session.execute(stmt, execution_options={"synchronize_session": "fetch"})
+    await session.commit()
 
   async def delete(
     self,

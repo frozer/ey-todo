@@ -13,6 +13,8 @@ Username = Annotated[
 
 class MeResponse(BaseModel):
   username: str
+  # send back in the X-CSRF-Token header on every POST/PATCH/PUT/DELETE
+  csrf_token: str
 
 class RegisterBody(BaseModel):
   username: Username

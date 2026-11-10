@@ -1,5 +1,6 @@
 import { useNavigate, useRouteLoaderData } from 'react-router-dom';
 import { logoutApiAuthLogoutPost, type MeResponse } from '../api';
+import { setCsrfToken } from './csrf';
 
 type RootLoaderData = {
   user: MeResponse;
@@ -11,6 +12,7 @@ export function useCurrentUser(): {user: MeResponse, logoutFn: () => void} {
 
   const logoutFn = async () => {
     await logoutApiAuthLogoutPost();
+    setCsrfToken(null);
     navigate('/login', { replace: true });
   };
 

@@ -5,6 +5,28 @@ export type ClientOptions = {
 };
 
 /**
+ * ErrorItem
+ */
+export type ErrorItem = {
+    /**
+     * Msg
+     */
+    msg: string;
+};
+
+/**
+ * ErrorResponse
+ *
+ * Body of every non-validation error: {"detail": [{"msg": "..."}]}.
+ */
+export type ErrorResponse = {
+    /**
+     * Detail
+     */
+    detail: Array<ErrorItem>;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -22,6 +44,10 @@ export type MeResponse = {
      * Username
      */
     username: string;
+    /**
+     * Csrf Token
+     */
+    csrf_token: string;
 };
 
 /**
@@ -110,10 +136,6 @@ export type TodoUpdate = {
      * Status
      */
     status?: string | null;
-    /**
-     * Position
-     */
-    position?: number | null;
     /**
      * Lft
      */
@@ -204,12 +226,14 @@ export type RegisterApiAuthRegisterPostErrors = {
     /**
      * Given username already exists, pick another one
      */
-    409: unknown;
+    409: ErrorResponse;
     /**
      * data validation failure
      */
     422: unknown;
 };
+
+export type RegisterApiAuthRegisterPostError = RegisterApiAuthRegisterPostErrors[keyof RegisterApiAuthRegisterPostErrors];
 
 export type RegisterApiAuthRegisterPostResponses = {
     /**
@@ -231,7 +255,7 @@ export type LoginApiAuthLoginPostErrors = {
     /**
      * invalid_credentials
      */
-    401: unknown;
+    401: ErrorResponse;
     /**
      * Validation Error
      */
@@ -260,8 +284,10 @@ export type MeApiAuthMeGetErrors = {
     /**
      * not_authenticated
      */
-    401: unknown;
+    401: ErrorResponse;
 };
+
+export type MeApiAuthMeGetError = MeApiAuthMeGetErrors[keyof MeApiAuthMeGetErrors];
 
 export type MeApiAuthMeGetResponses = {
     /**
@@ -283,8 +309,14 @@ export type LogoutApiAuthLogoutPostErrors = {
     /**
      * not_authenticated
      */
-    401: unknown;
+    401: ErrorResponse;
+    /**
+     * csrf_failed
+     */
+    403: ErrorResponse;
 };
+
+export type LogoutApiAuthLogoutPostError = LogoutApiAuthLogoutPostErrors[keyof LogoutApiAuthLogoutPostErrors];
 
 export type LogoutApiAuthLogoutPostResponses = {
     /**
@@ -332,6 +364,10 @@ export type CreateApiTodosPostData = {
 
 export type CreateApiTodosPostErrors = {
     /**
+     * csrf_failed
+     */
+    403: ErrorResponse;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -362,6 +398,14 @@ export type DeleteApiTodosItemIdDeleteData = {
 
 export type DeleteApiTodosItemIdDeleteErrors = {
     /**
+     * csrf_failed
+     */
+    403: ErrorResponse;
+    /**
+     * todo_not_found
+     */
+    404: ErrorResponse;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -373,8 +417,10 @@ export type DeleteApiTodosItemIdDeleteResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: Todo;
 };
+
+export type DeleteApiTodosItemIdDeleteResponse = DeleteApiTodosItemIdDeleteResponses[keyof DeleteApiTodosItemIdDeleteResponses];
 
 export type GetApiTodosItemIdGetData = {
     body?: never;
@@ -389,6 +435,10 @@ export type GetApiTodosItemIdGetData = {
 };
 
 export type GetApiTodosItemIdGetErrors = {
+    /**
+     * todo_not_found
+     */
+    404: ErrorResponse;
     /**
      * Validation Error
      */
@@ -420,6 +470,18 @@ export type UpdateApiTodosItemIdPatchData = {
 
 export type UpdateApiTodosItemIdPatchErrors = {
     /**
+     * csrf_failed
+     */
+    403: ErrorResponse;
+    /**
+     * todo_not_found
+     */
+    404: ErrorResponse;
+    /**
+     * stale_order
+     */
+    409: ErrorResponse;
+    /**
      * Validation Error
      */
     422: HttpValidationError;
@@ -431,5 +493,7 @@ export type UpdateApiTodosItemIdPatchResponses = {
     /**
      * Successful Response
      */
-    200: unknown;
+    200: Todo;
 };
+
+export type UpdateApiTodosItemIdPatchResponse = UpdateApiTodosItemIdPatchResponses[keyof UpdateApiTodosItemIdPatchResponses];

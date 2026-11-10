@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from ..core.clock import get_clock
+from ..core.errors import error_responses
 from ..database.models import UserRow
 from ..deps import SessionDep, SettingsDep, UserSessionStoreDep, UserStoreDep
 from .schemas import MeResponse, RegisterBody
@@ -17,6 +18,7 @@ from .security import (
 )
 from .session import (
   UserContext,
+  clear_session_cookie,
   require_user_session,
   set_session_cookie,
 )
@@ -37,7 +39,7 @@ def _failure_reason(user: UserRow | None, password_ok: bool) -> str | None:
   response_model=MeResponse,
   responses={
     status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "data validation failure"},
-    status.HTTP_409_CONFLICT: {"description": "Given username already exists, pick another one"}
+    **error_responses((status.HTTP_409_CONFLICT, "Given username already exists, pick another one")),
   }
 )
 async def register(
@@ -65,7 +67,7 @@ async def register(
   try:
     user = await user_store.create(session, body.username, password_hash)
 
-    await set_session_cookie(
+    csrf_token = await set_session_cookie(
       response,
       clock(),
       session,
@@ -74,7 +76,7 @@ async def register(
       settings.environment == "DEV"
     )
     
-    return MeResponse(username=body.username)
+    return MeResponse(username=body.username, csrf_token=csrf_token)
   
   except ValueError:
     raise HTTPException(
@@ -84,9 +86,7 @@ async def register(
 
 @router.post("/login",
   response_model=MeResponse,
-  responses={
-    status.HTTP_401_UNAUTHORIZED: {"description": "invalid_credentials"}
-  }
+  responses=error_responses((status.HTTP_401_UNAUTHORIZED, "invalid_credentials"))
 )
 async def login(
   body: RegisterBody,
@@ -105,7 +105,7 @@ async def login(
   reason = _failure_reason(user, password_ok)
 
   if reason is None:
-    await set_session_cookie(
+    csrf_token = await set_session_cookie(
       response,
       clock(),
       session,
@@ -116,33 +116,38 @@ async def login(
   else:
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=[{"msg": "invalid_credentials"}])
 
-  return MeResponse(username=body.username)
+  return MeResponse(username=body.username, csrf_token=csrf_token)
 
 @router.get("/me", 
             response_model=MeResponse,
-            responses={
-              status.HTTP_401_UNAUTHORIZED: {"description": "not_authenticated"}
-            })
+            responses=error_responses((status.HTTP_401_UNAUTHORIZED, "not_authenticated")))
 async def me(
   ctx: Annotated[
         UserContext, Depends(require_user_session)
     ],
 ):
   return MeResponse(
-        username=ctx.username
+        username=ctx.username,
+        csrf_token=ctx.csrf_token
     )
 
 @router.post("/logout",
   response_model=None,
-  responses={
-    status.HTTP_401_UNAUTHORIZED: {"description": "not_authenticated"}
-  }
+  responses=error_responses(
+    (status.HTTP_401_UNAUTHORIZED, "not_authenticated"),
+    (status.HTTP_403_FORBIDDEN, "csrf_failed"),
+  )
 )
 async def logout(
-  session: SessionDep, 
+  response: Response,
+  session: SessionDep,
   session_store: UserSessionStoreDep,
+  settings: SettingsDep,
+  clock: Annotated[Callable[[], datetime], Depends(get_clock)],
   ctx: Annotated[
         UserContext, Depends(require_user_session)
     ],
 ):
-  await session_store.clear(session, ctx.user_id)
+  # end only this device's session; the row is kept with revoked_at set
+  await session_store.revoke(session, ctx.session_hash, clock())
+  clear_session_cookie(response, settings.environment == "DEV")

@@ -51,6 +51,7 @@ async def test_other_users_todo_is_404(auth_client):
     "/api/auth/register", json={"username": "bob", "password": "correct-horse-battery"}
   )
   assert resp.status_code == 200
+  auth_client.headers["X-CSRF-Token"] = resp.json()["csrf_token"]
 
   assert (await auth_client.get(f"/api/todos/{todo['id']}")).status_code == 404
   assert (await auth_client.patch(f"/api/todos/{todo['id']}", json={"label": "x"})).status_code == 404

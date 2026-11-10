@@ -87,6 +87,7 @@ class SessionRow(Base):
   expires_at: Mapped[datetime] = mapped_column(UTCDateTime(),)
   last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(),)
   revoked_at: Mapped[datetime|None] = mapped_column(UTCDateTime(),)
+  csrf_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
   user_id: Mapped[uuid.UUID] = mapped_column(
     Uuid(native_uuid=False), 
     ForeignKey("users.id", ondelete="CASCADE"), 

@@ -69,4 +69,5 @@ async def auth_client(client) -> AsyncClient:
     json={"username": "alice", "password": "correct-horse-battery"},
   )
   assert resp.status_code == 200, resp.text
+  client.headers["X-CSRF-Token"] = resp.json()["csrf_token"]
   return client

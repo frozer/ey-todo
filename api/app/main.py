@@ -5,7 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .auth.router import router as auth_router
-from .core.config import get_settings
+from .auth.session import CSRF_HEADER
+from .core.config import Settings, get_settings
+from .core.origin import origin_check_middleware
 from .todos.router import router as todo_router
 from .todos.service import InvalidNeighbours, TodoNotFound
 
@@ -13,7 +15,9 @@ settings = get_settings()
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+
     app = FastAPI(
         title="EY Todo API",
         version="0.1.0",
@@ -38,18 +42,24 @@ def create_app() -> FastAPI:
             content={"detail": [{"msg": "stale_order"}]},
         )
 
+    # an origin allowed to call cross-origin must also pass the origin check
+    trusted = [*settings.trusted_origins, *settings.cors_origins]
+    app.middleware("http")(origin_check_middleware(trusted))
+
+    # added last so it runs first: CORS preflights are answered before the origin check
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PATCH", "DELETE"],
+            allow_headers=["Content-Type", CSRF_HEADER],
+        )
+
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(todo_router, prefix="/api")
+
     return app
 
 
 app = create_app()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Adjust this to your specific frontend URL in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(auth_router, prefix="/api")
-app.include_router(todo_router, prefix="/api")

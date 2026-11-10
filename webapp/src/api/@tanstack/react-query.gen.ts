@@ -4,7 +4,7 @@ import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanst
 
 import { client } from '../client.gen';
 import { createApiTodosPost, deleteApiTodosItemIdDelete, getApiTodosItemIdGet, healthHealthGet, listApiTodosGet, loginApiAuthLoginPost, logoutApiAuthLogoutPost, meApiAuthMeGet, type Options, registerApiAuthRegisterPost, updateApiTodosItemIdPatch } from '../sdk.gen';
-import type { CreateApiTodosPostData, CreateApiTodosPostError, CreateApiTodosPostResponse, DeleteApiTodosItemIdDeleteData, DeleteApiTodosItemIdDeleteError, GetApiTodosItemIdGetData, GetApiTodosItemIdGetError, GetApiTodosItemIdGetResponse, HealthHealthGetData, HealthHealthGetResponse, ListApiTodosGetData, ListApiTodosGetError, ListApiTodosGetResponse, LoginApiAuthLoginPostData, LoginApiAuthLoginPostError, LoginApiAuthLoginPostResponse, LogoutApiAuthLogoutPostData, MeApiAuthMeGetData, MeApiAuthMeGetResponse, RegisterApiAuthRegisterPostData, RegisterApiAuthRegisterPostResponse, UpdateApiTodosItemIdPatchData, UpdateApiTodosItemIdPatchError } from '../types.gen';
+import type { CreateApiTodosPostData, CreateApiTodosPostError, CreateApiTodosPostResponse, DeleteApiTodosItemIdDeleteData, DeleteApiTodosItemIdDeleteError, DeleteApiTodosItemIdDeleteResponse, GetApiTodosItemIdGetData, GetApiTodosItemIdGetError, GetApiTodosItemIdGetResponse, HealthHealthGetData, HealthHealthGetResponse, ListApiTodosGetData, ListApiTodosGetError, ListApiTodosGetResponse, LoginApiAuthLoginPostData, LoginApiAuthLoginPostError, LoginApiAuthLoginPostResponse, LogoutApiAuthLogoutPostData, LogoutApiAuthLogoutPostError, MeApiAuthMeGetData, MeApiAuthMeGetError, MeApiAuthMeGetResponse, RegisterApiAuthRegisterPostData, RegisterApiAuthRegisterPostError, RegisterApiAuthRegisterPostResponse, UpdateApiTodosItemIdPatchData, UpdateApiTodosItemIdPatchError, UpdateApiTodosItemIdPatchResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -60,8 +60,8 @@ export const healthHealthGetOptions = (options?: Options<HealthHealthGetData>) =
 /**
  * Register
  */
-export const registerApiAuthRegisterPostMutation = (options?: Partial<Options<RegisterApiAuthRegisterPostData>>): UseMutationOptions<RegisterApiAuthRegisterPostResponse, DefaultError, Options<RegisterApiAuthRegisterPostData>> => {
-    const mutationOptions: UseMutationOptions<RegisterApiAuthRegisterPostResponse, DefaultError, Options<RegisterApiAuthRegisterPostData>> = {
+export const registerApiAuthRegisterPostMutation = (options?: Partial<Options<RegisterApiAuthRegisterPostData>>): UseMutationOptions<RegisterApiAuthRegisterPostResponse, RegisterApiAuthRegisterPostError, Options<RegisterApiAuthRegisterPostData>> => {
+    const mutationOptions: UseMutationOptions<RegisterApiAuthRegisterPostResponse, RegisterApiAuthRegisterPostError, Options<RegisterApiAuthRegisterPostData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await registerApiAuthRegisterPost({
                 ...options,
@@ -96,7 +96,7 @@ export const meApiAuthMeGetQueryKey = (options?: Options<MeApiAuthMeGetData>) =>
 /**
  * Me
  */
-export const meApiAuthMeGetOptions = (options?: Options<MeApiAuthMeGetData>) => queryOptions<MeApiAuthMeGetResponse, DefaultError, MeApiAuthMeGetResponse, ReturnType<typeof meApiAuthMeGetQueryKey>>({
+export const meApiAuthMeGetOptions = (options?: Options<MeApiAuthMeGetData>) => queryOptions<MeApiAuthMeGetResponse, MeApiAuthMeGetError, MeApiAuthMeGetResponse, ReturnType<typeof meApiAuthMeGetQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await meApiAuthMeGet({
             ...options,
@@ -112,8 +112,8 @@ export const meApiAuthMeGetOptions = (options?: Options<MeApiAuthMeGetData>) => 
 /**
  * Logout
  */
-export const logoutApiAuthLogoutPostMutation = (options?: Partial<Options<LogoutApiAuthLogoutPostData>>): UseMutationOptions<unknown, DefaultError, Options<LogoutApiAuthLogoutPostData>> => {
-    const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<LogoutApiAuthLogoutPostData>> = {
+export const logoutApiAuthLogoutPostMutation = (options?: Partial<Options<LogoutApiAuthLogoutPostData>>): UseMutationOptions<unknown, LogoutApiAuthLogoutPostError, Options<LogoutApiAuthLogoutPostData>> => {
+    const mutationOptions: UseMutationOptions<unknown, LogoutApiAuthLogoutPostError, Options<LogoutApiAuthLogoutPostData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await logoutApiAuthLogoutPost({
                 ...options,
@@ -164,8 +164,8 @@ export const createApiTodosPostMutation = (options?: Partial<Options<CreateApiTo
 /**
  * Delete
  */
-export const deleteApiTodosItemIdDeleteMutation = (options?: Partial<Options<DeleteApiTodosItemIdDeleteData>>): UseMutationOptions<unknown, DeleteApiTodosItemIdDeleteError, Options<DeleteApiTodosItemIdDeleteData>> => {
-    const mutationOptions: UseMutationOptions<unknown, DeleteApiTodosItemIdDeleteError, Options<DeleteApiTodosItemIdDeleteData>> = {
+export const deleteApiTodosItemIdDeleteMutation = (options?: Partial<Options<DeleteApiTodosItemIdDeleteData>>): UseMutationOptions<DeleteApiTodosItemIdDeleteResponse, DeleteApiTodosItemIdDeleteError, Options<DeleteApiTodosItemIdDeleteData>> => {
+    const mutationOptions: UseMutationOptions<DeleteApiTodosItemIdDeleteResponse, DeleteApiTodosItemIdDeleteError, Options<DeleteApiTodosItemIdDeleteData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await deleteApiTodosItemIdDelete({
                 ...options,
@@ -199,8 +199,8 @@ export const getApiTodosItemIdGetOptions = (options: Options<GetApiTodosItemIdGe
 /**
  * Update
  */
-export const updateApiTodosItemIdPatchMutation = (options?: Partial<Options<UpdateApiTodosItemIdPatchData>>): UseMutationOptions<unknown, UpdateApiTodosItemIdPatchError, Options<UpdateApiTodosItemIdPatchData>> => {
-    const mutationOptions: UseMutationOptions<unknown, UpdateApiTodosItemIdPatchError, Options<UpdateApiTodosItemIdPatchData>> = {
+export const updateApiTodosItemIdPatchMutation = (options?: Partial<Options<UpdateApiTodosItemIdPatchData>>): UseMutationOptions<UpdateApiTodosItemIdPatchResponse, UpdateApiTodosItemIdPatchError, Options<UpdateApiTodosItemIdPatchData>> => {
+    const mutationOptions: UseMutationOptions<UpdateApiTodosItemIdPatchResponse, UpdateApiTodosItemIdPatchError, Options<UpdateApiTodosItemIdPatchData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await updateApiTodosItemIdPatch({
                 ...options,

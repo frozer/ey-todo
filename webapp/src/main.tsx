@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from './router.tsx'
 import { client } from './api/client.gen.ts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { withCsrfHeader } from './core/csrf.ts'
 
 
 const queryClient = new QueryClient()
@@ -12,6 +13,8 @@ const queryClient = new QueryClient()
 client.setConfig({
   baseUrl: '/',
 });
+
+client.interceptors.request.use(withCsrfHeader);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

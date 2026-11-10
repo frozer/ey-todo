@@ -3,17 +3,34 @@
 import * as z from 'zod';
 
 /**
+ * ErrorItem
+ */
+export const zErrorItem = z.object({
+    msg: z.string()
+});
+
+/**
+ * ErrorResponse
+ *
+ * Body of every non-validation error: {"detail": [{"msg": "..."}]}.
+ */
+export const zErrorResponse = z.object({
+    detail: z.array(zErrorItem)
+});
+
+/**
  * MeResponse
  */
 export const zMeResponse = z.object({
-    username: z.string()
+    username: z.string(),
+    csrf_token: z.string()
 });
 
 /**
  * RegisterBody
  */
 export const zRegisterBody = z.object({
-    username: z.string().min(1),
+    username: z.string().min(1).max(50),
     password: z.string().min(8).max(72)
 });
 
@@ -36,7 +53,7 @@ export const zTodo = z.object({
  */
 export const zTodoCreate = z.object({
     label: z.string().min(1),
-    text: z.string().nullish(),
+    text: z.string().max(200).nullish(),
     status: z.string().nullish()
 });
 
@@ -45,9 +62,8 @@ export const zTodoCreate = z.object({
  */
 export const zTodoUpdate = z.object({
     label: z.string().min(1).nullish(),
-    text: z.string().min(1).nullish(),
+    text: z.string().max(200).nullish(),
     status: z.string().min(1).nullish(),
-    position: z.int().gte(0).nullish(),
     lft: z.uuid().nullish(),
     rgt: z.uuid().nullish()
 });
@@ -131,6 +147,11 @@ export const zDeleteApiTodosItemIdDeletePath = z.object({
     item_id: z.uuid()
 });
 
+/**
+ * Successful Response
+ */
+export const zDeleteApiTodosItemIdDeleteResponse = zTodo;
+
 export const zGetApiTodosItemIdGetPath = z.object({
     item_id: z.uuid()
 });
@@ -145,3 +166,8 @@ export const zUpdateApiTodosItemIdPatchBody = zTodoUpdate;
 export const zUpdateApiTodosItemIdPatchPath = z.object({
     item_id: z.uuid()
 });
+
+/**
+ * Successful Response
+ */
+export const zUpdateApiTodosItemIdPatchResponse = zTodo;
