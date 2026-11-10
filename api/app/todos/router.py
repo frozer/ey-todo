@@ -3,7 +3,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from ..auth.session import UserContext, require_user_session
 from ..core.clock import get_clock
@@ -65,9 +65,14 @@ async def update(
   ],
   clock: Annotated[Callable[[], datetime], Depends(get_clock)],
 ):
-  if hasattr(body,"rgt") and hasattr(body,"rgt"):
-    return await store.reorder(session, TodoUpdate(lft=body.lft,rgt=body.rgt), item_id, ctx.user_id, clock())    
-  
+  if body.lft is not None or body.rgt is not None:
+    if body.model_fields_set - {"lft", "rgt"}:
+      raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail=[{"msg": "reorder (lft/rgt) cannot be combined with other fields"}]
+      )
+    return await store.reorder(session, body, item_id, ctx.user_id, clock())
+
   return await store.update(session, body, item_id, ctx.user_id, clock())
 
 @router.get("/{item_id}", response_model=Todo)

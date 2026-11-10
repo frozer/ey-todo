@@ -8,8 +8,8 @@ StrippedStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length
 
 class TodoCreate(BaseModel):
   label: StrippedStr = Field(examples=["Build todo app"])
-  text: str | None = Field(strip_whitespace=True, default=None)
-  status: str | None = Field(strip_whitespace=True, default=None)
+  text: Annotated[str, StringConstraints(strip_whitespace=True)] | None = None
+  status: Annotated[str, StringConstraints(strip_whitespace=True)] | None = None
 
 class TodoUpdate(BaseModel):
   label: StrippedStr | None = None
@@ -37,4 +37,4 @@ class TodosResponse(BaseModel):
   meta: TodosMeta
 
 class FilterParams(BaseModel):
-  q: str | None = Field(strip_whitespace=True,to_lower=True,default=None)
+  q: Annotated[str, StringConstraints(strip_whitespace=True, to_lower=True)] | None = None

@@ -39,7 +39,7 @@ export function useTodo(id?: string) {
         
         if (payload.lft || payload.rgt) {
           changedRecord.lft = payload.lft ?? null;
-          changedRecord.rgt = payload.lft ?? null;
+          changedRecord.rgt = payload.rgt ?? null;
         }
 
         const {error: updateError} = await updateApiTodosItemIdPatch({
