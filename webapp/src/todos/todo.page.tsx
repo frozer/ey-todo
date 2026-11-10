@@ -29,17 +29,17 @@ export function TodoPage() {
   const cancelAction = useCallback(() => navigate('/'), []);
   const removeAction = useCallback(() => removeTodo({id}, mutationOptions), []);
 
-  const errorMessage = [loadError, removeError, createError]
-    .map((e) => e?.message).join(' ');
+  const errorMessage = useMemo(() => [loadError, removeError, createError]
+    .map((e) => e?.message).join(' '), [loadError, removeError, createError]);
   
   return (
     <section>
-      {errorMessage ? <span className="error-message">{errorMessage}</span> : null}
+      {errorMessage && <span className="error-message">{errorMessage}</span>}
       {isLoadPending
         ? <span className="info-message">Loading...</span>
         : <TodoForm onSubmit={mutateAction} item={itemToEdit}>
             <div className="form-footer">
-              {id ? <button disabled={isRemovePending} onClick={() => removeAction()}>Remove</button> : null }
+              {id && <button disabled={isRemovePending} onClick={() => removeAction()}>Remove</button>}
               <button type="submit" disabled={isCreatePending}>Save</button>
               <button onClick={() => cancelAction()}>Cancel</button>
             </div>

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { createApiTodosPost, getApiTodosItemIdGet, updateApiTodosItemIdPatch, type Todo, type TodoCreate, type TodoUpdate } from "../api";
-import { ALLOWED_KEYS, STORE_KEY } from "./types";
+import { STORE_KEY } from "./types";
 import { convertApiError } from "../core/error.utils";
 
 const isUpdatePayload = (value: any): value is TodoUpdate => {

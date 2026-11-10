@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { TodoList } from "./components/TodoList";
 import { useTodos } from "./useTodos";
 import { useNavigate } from "react-router-dom";
@@ -37,12 +37,12 @@ export function TodosPage() {
     updateTodo({id, data: {lft,rgt}});
   }, [todos])
 
-  const errorMessage = [error, updateError]
-    .map((e) => e?.message).join(' ');
+  const errorMessage = useMemo(() => [error, updateError]
+    .map((e) => e?.message).join(' '), []);
 
   return (
     <section>
-      {errorMessage ? <span className="error-message">{errorMessage}</span> : null}
+      {errorMessage && <span className="error-message">{errorMessage}</span>}
       <header>
         <input type="text" onChange={(e) => onQuery(e.target.value)} placeholder="Search..."></input>
         <button type="button" onClick={() => createAction()}>New Todo</button>

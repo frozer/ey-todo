@@ -23,7 +23,7 @@ export function TodoForm({onSubmit, children, item}: {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <input {...register("label")} placeholder="Add title"/>
-      {errors?.label ? <span>{errors.label?.message}</span> : null}
+      {errors?.label && <span>{errors.label?.message}</span>}
       
       <label>
         <span>Description</span>

@@ -20,28 +20,24 @@ export function LoginForm({action}: {
 
   async function onSubmit(values: RegisterBody) {
     setServerError(null);
-    const formData = new FormData();
-    formData.set("username", values.username);
-    formData.set("password", values.password);
-
     const result = await action(values);
-    if (result && result.error) setServerError(result.error);
+    if (result) setServerError(result.error);
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      {serverError !== null ? <span>{serverError}</span> : null}
+      {serverError !== null && <span className="error-message">{serverError}</span>}
       
       <label>
         <span>Username</span>
         <input {...register("username")}/>
-        {errors?.username ? <span>{errors.username?.message}</span> : null}
+        {errors?.username && <span>{errors.username?.message}</span>}
       </label>
       
       <label>
         <span>Password</span>
         <input type="password" {...register("password")} />
-        {errors?.password ? <span>{errors.password?.message}</span> : null}
+        {errors?.password && <span>{errors.password?.message}</span>}
       </label>
       
       <button type="submit" disabled={isSubmitting}>Submit</button>

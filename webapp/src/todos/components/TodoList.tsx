@@ -13,8 +13,8 @@ export function TodoList({items, onRemove, onEdit, onPositionChange, isPositionP
       {items?.map((todo, idx) => (        
         <li key={todo.id}>
           <span>{todo.label}</span>
-          { idx > 0 ? <button  disabled={isPositionPending} onClick={() => onPositionChange(todo.id, idx, 'UP')}>Up</button> : null }
-          { idx < items.length - 1 ? <button disabled={isPositionPending} onClick={() => onPositionChange(todo.id, idx, 'DOWN')}>Down</button> : null }
+          { idx > 0 && <button  disabled={isPositionPending} onClick={() => onPositionChange(todo.id, idx, 'UP')}>Up</button>}
+          { idx < items.length - 1 && <button disabled={isPositionPending} onClick={() => onPositionChange(todo.id, idx, 'DOWN')}>Down</button>}
           <button onClick={() => onEdit(todo.id)}>Edit</button>
           <button onClick={() => onRemove(todo.id)}>Remove</button>
         </li>      

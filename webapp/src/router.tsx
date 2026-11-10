@@ -1,6 +1,6 @@
 import { createBrowserRouter, redirect } from "react-router-dom";
 import RootLayout from "./RootLayout";
-import { hasAuth } from "./shared/hasAuth";
+import { hasAuth } from "./core/hasAuth";
 import { LoginPage } from "./login/page";
 import { TodosPage } from "./todos/todos.page";
 import { TodoPage } from "./todos/todo.page";
