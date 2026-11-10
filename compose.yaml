@@ -23,6 +23,8 @@ services:
     ports:
       - "${PORT:-8080}:8080"
     environment:
+      # DEV drops the Secure cookie flag: only for plain-HTTP testing on a LAN IP
+      ENVIRONMENT: ${ENVIRONMENT:-PROD}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # behind a TLS-terminating proxy: trust its X-Forwarded-Proto (uvicorn reads this)
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
