@@ -2,20 +2,24 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 StrippedStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
+OptionalText = Annotated[
+  Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None,
+  AfterValidator(lambda v: v or None),
+]
+
 class TodoCreate(BaseModel):
   label: StrippedStr = Field(examples=["Build todo app"])
-  text: Annotated[str, StringConstraints(strip_whitespace=True)] | None = None
+  text: OptionalText = None
   status: Annotated[str, StringConstraints(strip_whitespace=True)] | None = None
 
 class TodoUpdate(BaseModel):
   label: StrippedStr | None = None
-  text: StrippedStr | None = None
+  text: OptionalText = None
   status: StrippedStr | None = None
-  position: int | None = Field(default=None, ge=0)
   lft: uuid.UUID | None = Field(default=None)
   rgt: uuid.UUID | None = Field(default=None)
 

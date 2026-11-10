@@ -58,7 +58,7 @@ class TodoRow(Base):
     default=uuid.uuid4
   )
   label: Mapped[str] = mapped_column(String(50))
-  text: Mapped[str] = mapped_column(String(200))
+  text: Mapped[str | None] = mapped_column(String(200), nullable=True)
   position: Mapped[int] = mapped_column(default=0, index=True)
   status: Mapped[str] = mapped_column(String(50), default="")
   created_at: Mapped[datetime] = mapped_column(UTCDateTime())

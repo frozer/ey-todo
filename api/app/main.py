@@ -1,11 +1,13 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .auth.router import router as auth_router
 from .core.config import get_settings
 from .todos.router import router as todo_router
+from .todos.service import InvalidNeighbours, TodoNotFound
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
@@ -21,6 +23,20 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.exception_handler(TodoNotFound)
+    async def todo_not_found(_request: Request, _exc: TodoNotFound) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": [{"msg": "todo_not_found"}]},
+        )
+
+    @app.exception_handler(InvalidNeighbours)
+    async def stale_order(_request: Request, _exc: InvalidNeighbours) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"detail": [{"msg": "stale_order"}]},
+        )
 
     return app
 

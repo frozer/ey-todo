@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from sqlalchemy import func, select, update
@@ -9,8 +10,21 @@ from .schemas import Todo, TodoCreate, TodosMeta, TodosResponse, TodoUpdate
 # naive implementation of sparse ordering
 STEP = 1000
 
-def RebalanceRequired() -> ValueError:
-   raise ValueError("Rebalance required")
+# columns that may not be NULL, so an explicit null in a PATCH means "leave as is"
+NON_NULLABLE_UPDATE_FIELDS = {"label", "status"}
+
+
+class TodoNotFound(LookupError):
+  """The todo does not exist, is removed, or belongs to another user."""
+
+
+class RebalanceRequired(Exception):
+  """No integer position is left between the two neighbours."""
+
+
+class InvalidNeighbours(ValueError):
+  """The left neighbour is not before the right one (stale client order)."""
+
 
 def generate_position(left: int | None, right: int | None) -> int:
     if left is None and right is None:
@@ -22,12 +36,35 @@ def generate_position(left: int | None, right: int | None) -> int:
     if right is None:
         return left + STEP
 
-    if right - left <= 1:
+    if left >= right:
+        raise InvalidNeighbours()
+
+    if right - left == 1:
         raise RebalanceRequired()
 
     return (left + right) // 2
 
+
+def _to_todo(row: TodoRow) -> Todo:
+  return Todo(
+    id=row.id,
+    label=row.label,
+    text=row.text,
+    position=row.position,
+    created_at=row.created_at,
+    modified_at=row.modified_at,
+    removed_at=row.removed_at,
+    status=row.status
+  )
+
+
 class TodoStore:
+  def _active(self, user_id: str):
+    return [
+      TodoRow.user_id == user_id,
+      TodoRow.is_removed == False
+    ]
+
   async def getAll(
     self,
     session: AsyncSession,
@@ -36,43 +73,26 @@ class TodoStore:
     limit: int = 100,
     offset: int = 0,
   ) -> TodosResponse:
-    
-    conditions = [
-      TodoRow.user_id == user_id,
-      TodoRow.is_removed == False
-    ]
-        
+
+    conditions = self._active(user_id)
+
     if filter is not None:
       for key, value in filter.items():
-        if key == "q":        
+        if key == "q":
           conditions.append(TodoRow.label.ilike(f"%{value}%"))
-    
+
+    # fetch one extra row to learn whether another page exists
     stmt = select(TodoRow).where(*conditions).order_by(
       TodoRow.position,
       TodoRow.created_at
-    ).limit(limit=limit).offset(offset=offset)
-    
-    result = await session.stream_scalars(stmt)
+    ).limit(limit + 1).offset(offset)
 
-    items: list[Todo] = []
-
-    async for row in result:
-      items.append(Todo(
-        id=str(row.id),
-        label=row.label,
-        text=row.text,
-        position=row.position,
-        created_at=row.created_at,
-        modified_at=row.modified_at,
-        status=row.status
-      ))
+    rows = (await session.scalars(stmt)).all()
 
     return TodosResponse(
-      items=items,
-      meta= TodosMeta(
-         has_more=len(items) < limit
-      )
-    ) 
+      items=[_to_todo(row) for row in rows[:limit]],
+      meta=TodosMeta(has_more=len(rows) > limit)
+    )
 
   async def create(
       self,
@@ -81,169 +101,145 @@ class TodoStore:
       user_id: str,
       now: datetime
   ) -> Todo:
-    
-    conditions = [
-      TodoRow.user_id == user_id,
-      TodoRow.is_removed == False
-    ]
+    min_position = await session.scalar(
+      select(func.min(TodoRow.position)).where(*self._active(user_id))
+    )
 
-    get_min_position_stmt = select(func.min(TodoRow.position)).where(*conditions)
-
-    min_position = await session.scalar(get_min_position_stmt)
-
-    position = generate_position(None, min_position)
-    
     row = TodoRow(
       user_id=user_id,
       label=item.label,
       text=item.text,
       created_at=now,
-      position=position
+      position=generate_position(None, min_position)
     )
 
     session.add(row)
-
     await session.commit()
 
-    return Todo(
-      id=row.id,
-      label=row.label,
-      text=row.text,
-      position=row.position,
-      created_at=row.created_at,
-      status=row.status
-    )
+    return _to_todo(row)
 
   async def delete(
       self,
       session: AsyncSession,
-      id: str,
+      id: uuid.UUID,
       user_id: str,
       now: datetime
-  ) -> None:
-    conditions = [
-      TodoRow.id == id, 
-      TodoRow.user_id == user_id
-    ]
-    stmt = update(TodoRow).where(*conditions).values(
+  ) -> Todo:
+    stmt = update(TodoRow).where(
+      TodoRow.id == id, *self._active(user_id)
+    ).values(
       is_removed=True,
       removed_at=now
     ).returning(TodoRow)
-    
-    result = await session.execute(stmt)
+
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+      raise TodoNotFound()
+
     await session.commit()
-    
-    row = result.scalar_one()
-    return Todo(
-      id=row.id,
-      label=row.label,
-      text=row.text,
-      position=row.position,
-      created_at=row.created_at,
-      removed_at=row.removed_at,
-      status=row.status
-    )
-  
+    return _to_todo(row)
+
   async def update(
       self,
       session: AsyncSession,
       item: TodoUpdate,
-      id: str,
+      id: uuid.UUID,
       user_id: str,
       now: datetime
   ) -> Todo:
-    conditions = [
-      TodoRow.id == id, 
-      TodoRow.user_id == user_id,
-      TodoRow.is_removed == False
-    ]
-    
-    update_data = item.model_dump(exclude_unset=True,exclude=["lft","rgt"])
+    update_data = {
+      key: value
+      for key, value in item.model_dump(exclude_unset=True, exclude={"lft", "rgt"}).items()
+      if not (value is None and key in NON_NULLABLE_UPDATE_FIELDS)
+    }
     update_data["modified_at"] = now
-    stmt = update(TodoRow).where(*conditions).values(**update_data).returning(TodoRow)
 
-    result = await session.execute(stmt)
+    stmt = update(TodoRow).where(
+      TodoRow.id == id, *self._active(user_id)
+    ).values(**update_data).returning(TodoRow)
+
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+      raise TodoNotFound()
+
     await session.commit()
-
-    row = result.scalar_one()
-
-    return Todo(
-      id=row.id,
-      label=row.label,
-      text=row.text,
-      position=row.position,
-      created_at=row.created_at,
-      modified_at=row.modified_at,
-      status=row.status
-    )
+    return _to_todo(row)
 
   async def get(
-        self,
-        session: AsyncSession,
-        id: str,
-        user_id: str
-    ) -> Todo:
-      conditions = [
-        TodoRow.id == id, 
-        TodoRow.user_id == user_id,
-        TodoRow.is_removed == False
-      ]
-      
-      stmt = select(TodoRow).where(*conditions)
-  
-      result = await session.execute(stmt)
-  
-      row = result.scalar_one()
-  
-      return Todo(
-        id=row.id,
-        label=row.label,
-        text=row.text,
-        position=row.position,
-        created_at=row.created_at,
-        modified_at=row.modified_at,
-        status=row.status
+      self,
+      session: AsyncSession,
+      id: uuid.UUID,
+      user_id: str
+  ) -> Todo:
+    row = await session.scalar(
+      select(TodoRow).where(TodoRow.id == id, *self._active(user_id))
+    )
+    if row is None:
+      raise TodoNotFound()
+
+    return _to_todo(row)
+
+  async def _position_of(
+      self,
+      session: AsyncSession,
+      id: uuid.UUID | None,
+      user_id: str
+  ) -> int | None:
+    # a column select bypasses the identity map, so it sees bulk updates
+    if id is None:
+      return None
+
+    position = await session.scalar(
+      select(TodoRow.position).where(TodoRow.id == id, *self._active(user_id))
+    )
+    if position is None:
+      raise TodoNotFound()
+
+    return position
+
+  async def _rebalance(self, session: AsyncSession, user_id: str) -> None:
+    """Respace the user's active todos to multiples of STEP, keeping their order."""
+    ids = (await session.scalars(
+      select(TodoRow.id).where(*self._active(user_id)).order_by(
+        TodoRow.position,
+        TodoRow.created_at
       )
+    )).all()
+
+    await session.execute(
+      update(TodoRow),
+      [{"id": todo_id, "position": index * STEP} for index, todo_id in enumerate(ids)]
+    )
 
   async def reorder(
-        self,
-        session: AsyncSession,
-        item: TodoUpdate,
-        id: str,
-        user_id: str,
-        now: datetime
-    ) -> Todo:
-      conditions = [
-        TodoRow.id == id, 
-        TodoRow.user_id == user_id,
-        TodoRow.is_removed == False
-      ]
+      self,
+      session: AsyncSession,
+      item: TodoUpdate,
+      id: uuid.UUID,
+      user_id: str,
+      now: datetime
+  ) -> Todo:
+    await self._position_of(session, id, user_id)  # 404 before any rebalance
 
-      lftItem = await self.get(session, item.lft, user_id) if item.lft is not None else None
-      rgtItem = await self.get(session, item.rgt, user_id) if item.rgt is not None else None
-
-      lft = lftItem.position if lftItem is not None else None
-      rgt = rgtItem.position if rgtItem is not None else None
-
-      position = generate_position(lft, rgt)
-
-      update_data = {
-         "position": position
-      }
-      update_data["modified_at"] = now
-      stmt = update(TodoRow).where(*conditions).values(**update_data).returning(TodoRow)
-  
-      result = await session.execute(stmt)
-      await session.commit()
-  
-      row = result.scalar_one()
-  
-      return Todo(
-        id=row.id,
-        label=row.label,
-        text=row.text,
-        position=row.position,
-        created_at=row.created_at,
-        modified_at=row.modified_at,
-        status=row.status
+    async def neighbours() -> tuple[int | None, int | None]:
+      return (
+        await self._position_of(session, item.lft, user_id),
+        await self._position_of(session, item.rgt, user_id),
       )
+
+    try:
+      position = generate_position(*await neighbours())
+    except RebalanceRequired:
+      await self._rebalance(session, user_id)
+      position = generate_position(*await neighbours())
+
+    stmt = update(TodoRow).where(
+      TodoRow.id == id, *self._active(user_id)
+    ).values(
+      position=position,
+      modified_at=now
+    ).returning(TodoRow)
+
+    row = (await session.execute(stmt)).scalar_one()
+    await session.commit()
+    return _to_todo(row)

@@ -42,7 +42,7 @@ async def create(
 ):
   return await store.create(session, body, ctx.user_id, clock())
 
-@router.delete("/{item_id}", response_model=None)
+@router.delete("/{item_id}", response_model=Todo, responses={status.HTTP_404_NOT_FOUND: {"description": "todo_not_found"}})
 async def delete(
   item_id: uuid.UUID,
   session: SessionDep,
@@ -54,7 +54,14 @@ async def delete(
 ):
   return await store.delete(session, item_id, ctx.user_id, clock())
 
-@router.patch("/{item_id}", response_model=None)
+@router.patch(
+  "/{item_id}",
+  response_model=Todo,
+  responses={
+    status.HTTP_404_NOT_FOUND: {"description": "todo_not_found"},
+    status.HTTP_409_CONFLICT: {"description": "stale_order"},
+  }
+)
 async def update(
   item_id: uuid.UUID,
   body: TodoUpdate,
@@ -75,7 +82,7 @@ async def update(
 
   return await store.update(session, body, item_id, ctx.user_id, clock())
 
-@router.get("/{item_id}", response_model=Todo)
+@router.get("/{item_id}", response_model=Todo, responses={status.HTTP_404_NOT_FOUND: {"description": "todo_not_found"}})
 async def get(
   item_id: uuid.UUID,
   session: SessionDep,
