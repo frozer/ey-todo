@@ -4,7 +4,7 @@ import { useTodo } from "./useTodo";
 import { useCallback, useMemo } from "react";
 import type { TodoCreate, TodoUpdate } from "../api";
 import type { LocationState } from "../core/navigation.types";
-import { useTodos } from "./useTodos";
+import { useTodoOperations } from "./useTodoOperations";
 
 export function TodoPage() {
   const navigate = useNavigate();
@@ -16,24 +16,23 @@ export function TodoPage() {
   }), [navigate])
 
   const {
-    mutate,
     isLoadPending,
-    isCreatePending,
     loadError,
-    createError,
     itemToEdit
   } = useTodo(id);
-  const {removeTodo, isRemovePending, removeError} = useTodos();
+  const {createTodo, createError, isCreatePending, removeTodo, isRemovePending, removeError, updateTodo, updateError} = useTodoOperations();
 
   const mutateAction = useCallback(
-    (payload: TodoCreate | TodoUpdate) => mutate(payload, mutationOptions),
-    [mutate, mutationOptions]);
+    (payload: TodoCreate | TodoUpdate) => id 
+      ? updateTodo({id, data: payload, prev: itemToEdit!}, mutationOptions) 
+      : createTodo(payload as TodoCreate, mutationOptions),
+    [updateTodo, createTodo, mutationOptions, itemToEdit]);
   const cancelAction = useCallback(() => navigate('/'), [navigate]);
   const removeAction = useCallback(
     () => removeTodo({id}, mutationOptions),
     [removeTodo, id, mutationOptions]);
 
-  const errorMessage = useMemo(() => [loadError, removeError, createError]
+  const errorMessage = useMemo(() => [loadError, removeError, createError, updateError]
     .map((e) => e?.message).filter(Boolean).join(' '), [loadError, removeError, createError]);
 
   return (

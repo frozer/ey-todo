@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { TodoList } from "./components/TodoList";
 import { useTodos } from "./useTodos";
 import { useNavigate } from "react-router-dom";
+import { useTodoOperations } from "./useTodoOperations";
 
 export function TodosPage() {
   const navigate = useNavigate();
@@ -9,12 +10,15 @@ export function TodosPage() {
   const {todos,
     isPending,
     error,
-    setQuery,
+    setQuery
+  } = useTodos();
+
+  const {
     removeTodo,
     updateTodo,
     updateError,
     isUpdatePending
-  } = useTodos();
+  } = useTodoOperations()
 
   const onQuery = useCallback((q: string) => setQuery(q), [setQuery]);
 
